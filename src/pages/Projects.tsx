@@ -56,7 +56,7 @@ export function Projects() {
             return (
               <article
                 key={project.id}
-                className="group relative rounded-3xl border border-line bg-white shadow-card transition-shadow hover:shadow-lift"
+                className="group relative rounded-3xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift"
               >
                 <Link
                   to="/"

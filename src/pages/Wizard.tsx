@@ -58,7 +58,7 @@ function Notice({
         'rounded-2xl border px-4 py-3 text-[12.5px] leading-relaxed',
         tone === 'error' && 'border-accent/25 bg-accent-soft text-accent-deep',
         tone === 'ok' && 'border-moss/25 bg-moss-soft text-moss-deep',
-        tone === 'info' && 'border-line bg-white/70 text-ink-soft'
+        tone === 'info' && 'border-line bg-surface/70 text-ink-soft'
       )}
     >
       {children}
@@ -76,7 +76,7 @@ function TaskEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-white px-4 py-3.5 shadow-card">
+    <div className="rounded-2xl border border-line bg-surface px-4 py-3.5 shadow-card">
       <div className="flex items-start gap-2">
         <input
           value={task.title}
@@ -771,7 +771,7 @@ export function Wizard() {
                             'rounded-2xl border px-3.5 py-3 text-left transition-colors',
                             active
                               ? 'border-ink bg-ink text-paper'
-                              : 'border-line bg-white text-ink-soft hover:border-ink-faint/60'
+                              : 'border-line bg-surface text-ink-soft hover:border-ink-faint/60'
                           )}
                         >
                           <span className="block text-[13px] font-semibold">{mode.title}</span>
@@ -856,7 +856,7 @@ export function Wizard() {
                   className="btn btn-primary shrink-0 px-4"
                 >
                   {searchLoading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
                   ) : draft.results.length ? (
                     <>
                       <RefreshIcon className="h-4 w-4" />
@@ -956,7 +956,7 @@ export function Wizard() {
                   {[0, 1, 2].map((i) => (
                     <div
                       key={i}
-                      className="h-28 animate-pulse rounded-3xl border border-line bg-white/70"
+                      className="h-28 animate-pulse rounded-3xl border border-line bg-surface/70"
                     />
                   ))}
                 </div>
@@ -972,8 +972,8 @@ export function Wizard() {
                         className={cx(
                           'rounded-3xl border p-4 transition-colors',
                           selected
-                            ? 'border-ink/70 bg-white shadow-card'
-                            : 'border-line bg-white/70'
+                            ? 'border-ink/70 bg-surface shadow-card'
+                            : 'border-line bg-surface/70'
                         )}
                       >
                         <div className="flex gap-3">
@@ -987,7 +987,7 @@ export function Wizard() {
                               'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition',
                               selected
                                 ? 'border-ink bg-ink text-paper'
-                                : 'border-line bg-white text-transparent hover:border-ink-faint'
+                                : 'border-line bg-surface text-transparent hover:border-ink-faint'
                             )}
                           >
                             <CheckIcon className="h-3 w-3" />
@@ -1123,7 +1123,7 @@ export function Wizard() {
                   >
                     {analysisLoading ? (
                       <>
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
                         正在读文献…
                       </>
                     ) : hasKey ? (
@@ -1196,7 +1196,7 @@ export function Wizard() {
                     )}
                     rows={9}
                     aria-label="可复制的提示词"
-                    className="mt-3 w-full resize-y rounded-2xl border border-line bg-white/80 p-3 text-[11.5px] leading-relaxed text-ink-soft outline-none"
+                    className="mt-3 w-full resize-y rounded-2xl border border-line bg-surface/80 p-3 text-[11.5px] leading-relaxed text-ink-soft outline-none"
                   />
                 </div>
               ) : null}
@@ -1258,7 +1258,7 @@ export function Wizard() {
                               ? '自己写三句话：研究问题 / 方法 / 与课题的关系。'
                               : '可以等 AI 生成，也可以自己写。'
                           }
-                          className="w-full resize-y rounded-2xl border border-line bg-paper/40 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
+                          className="w-full resize-y rounded-2xl border border-line bg-paper/40 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition focus:border-ink-faint/60 focus:bg-surface focus:ring-4 focus:ring-ink/5"
                         />
                       </label>
                     </div>
@@ -1287,8 +1287,8 @@ export function Wizard() {
                         className={cx(
                           'rounded-3xl border p-4 transition-colors',
                           direction.selected
-                            ? 'border-ink/70 bg-white shadow-card'
-                            : 'border-line bg-white/70'
+                            ? 'border-ink/70 bg-surface shadow-card'
+                            : 'border-line bg-surface/70'
                         )}
                       >
                         <div className="flex gap-3">
@@ -1302,7 +1302,7 @@ export function Wizard() {
                               'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition',
                               direction.selected
                                 ? 'border-ink bg-ink text-paper'
-                                : 'border-line bg-white text-transparent hover:border-ink-faint'
+                                : 'border-line bg-surface text-transparent hover:border-ink-faint'
                             )}
                           >
                             <CheckIcon className="h-3 w-3" />
@@ -1357,9 +1357,9 @@ export function Wizard() {
                                       'rounded-full px-2.5 py-1 text-[10.5px] transition',
                                       active
                                         ? f === '高'
-                                          ? 'bg-moss text-white'
+                                          ? 'bg-moss text-paper'
                                           : f === '中'
-                                            ? 'bg-accent text-white'
+                                            ? 'bg-accent text-paper'
                                             : 'bg-ink text-paper'
                                         : 'border border-line text-ink-faint hover:border-ink-faint'
                                     )}
@@ -1381,7 +1381,7 @@ export function Wizard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-line bg-white/50 px-5 py-7 text-center">
+                  <div className="rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-7 text-center">
                     <p className="text-[14px] font-medium">还没有方向</p>
                     <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
                       可以让 AI 生成，也可以自己写一个。哪怕只是一句话的想法。
@@ -1412,7 +1412,7 @@ export function Wizard() {
                   : '10–15 个任务，每个 20–45 分钟。先跑起来，再慢慢调整。'}
               </p>
 
-              <div className="mt-4 rounded-2xl bg-white/60 px-4 py-3 text-[11.5px] leading-relaxed text-ink-soft">
+              <div className="mt-4 rounded-2xl bg-surface/60 px-4 py-3 text-[11.5px] leading-relaxed text-ink-soft">
                 <span className="font-medium text-ink">{stage} · 阶段策略 </span>
                 {STAGE_STRATEGY[stage]}
               </div>
@@ -1450,7 +1450,7 @@ export function Wizard() {
                     >
                       {taskLoading ? (
                         <>
-                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
                           正在拆解…
                         </>
                       ) : hasKey ? (

@@ -35,7 +35,7 @@ export function Layout() {
 
       <nav
         aria-label="主导航"
-        className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-3xl border border-line bg-white/85 px-2 py-2 shadow-lift backdrop-blur-md"
+        className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-3xl border border-line bg-surface/85 px-2 py-2 shadow-lift backdrop-blur-md"
       >
         <div className="grid grid-cols-4">
           {NAV.map(({ to, label, icon: Icon, end }) => (

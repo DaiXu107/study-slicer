@@ -181,6 +181,15 @@ export function DownloadIcon({ className }: IconProps) {
   );
 }
 
+export function UploadIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="M12 20.5V8.5M7.5 13 12 8.5l4.5 4.5" />
+      <path d="M4 6.5v-1A1.8 1.8 0 0 1 5.8 3.7h12.4A1.8 1.8 0 0 1 20 5.5v1" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>

@@ -16,8 +16,8 @@ export function TaskCard({ task, onToggle, onPatch, showDate }: Props) {
       className={cx(
         'rounded-3xl border p-5 transition-colors duration-300',
         task.done
-          ? 'border-moss/25 bg-[#f3f6f1]'
-          : 'border-line bg-white shadow-card'
+          ? 'border-moss/25 bg-done'
+          : 'border-line bg-surface shadow-card'
       )}
     >
       <div className="flex gap-4">
@@ -30,8 +30,8 @@ export function TaskCard({ task, onToggle, onPatch, showDate }: Props) {
           className={cx(
             'mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 transition-all duration-200',
             task.done
-              ? 'border-moss bg-moss text-white'
-              : 'border-line bg-white text-transparent hover:border-ink-faint active:scale-90'
+              ? 'border-moss bg-moss text-paper'
+              : 'border-line bg-surface text-transparent hover:border-ink-faint active:scale-90'
           )}
         >
           <CheckIcon className={cx('h-4 w-4', task.done && 'animate-pop')} />

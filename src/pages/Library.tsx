@@ -23,7 +23,7 @@ function PaperCard({
   onOpen: () => void;
 }) {
   return (
-    <article className="rounded-3xl border border-line bg-white p-5 shadow-card">
+    <article className="rounded-3xl border border-line bg-surface p-5 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-[15.5px] font-semibold leading-snug text-ink">{paper.title}</h3>
         <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
@@ -104,7 +104,7 @@ function PaperCard({
           onChange={(e) => onChangeNote(e.target.value)}
           rows={2}
           placeholder="它和我的课题有什么关系？"
-          className="w-full resize-y rounded-2xl border border-line/80 bg-paper/50 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
+          className="w-full resize-y rounded-2xl border border-line/80 bg-paper/50 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-surface focus:ring-4 focus:ring-ink/5"
         />
       </label>
     </article>

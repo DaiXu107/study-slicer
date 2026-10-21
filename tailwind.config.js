@@ -4,22 +4,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#1c2b3a',
-        'ink-soft': '#536473',
-        'ink-faint': '#8b98a4',
-        paper: '#f8f6f1',
-        line: '#e8e3d8',
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        'ink-soft': 'rgb(var(--c-ink-soft) / <alpha-value>)',
+        'ink-faint': 'rgb(var(--c-ink-faint) / <alpha-value>)',
+        paper: 'rgb(var(--c-paper) / <alpha-value>)',
+        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        done: 'rgb(var(--c-done) / <alpha-value>)',
+        line: 'rgb(var(--c-line) / <alpha-value>)',
         accent: {
-          DEFAULT: '#df7a3e',
-          soft: '#fbeee3',
-          deep: '#bf5d27',
+          DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',
+          soft: 'rgb(var(--c-accent-soft) / <alpha-value>)',
+          deep: 'rgb(var(--c-accent-deep) / <alpha-value>)',
         },
         moss: {
-          DEFAULT: '#6f9b78',
-          soft: '#edf4ee',
-          deep: '#527a5b',
+          DEFAULT: 'rgb(var(--c-moss) / <alpha-value>)',
+          soft: 'rgb(var(--c-moss-soft) / <alpha-value>)',
+          deep: 'rgb(var(--c-moss-deep) / <alpha-value>)',
         },
-        sun: '#f0c46a',
+        sun: 'rgb(var(--c-sun) / <alpha-value>)',
       },
       fontFamily: {
         sans: [

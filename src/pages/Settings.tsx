@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { CheckIcon } from '../components/Icons';
+import { Link } from 'react-router-dom';
+import { CheckIcon, ChevronRightIcon } from '../components/Icons';
 import { DEFAULT_SETTINGS, type Settings } from '../types';
 import { testConnection } from '../lib/llm';
 import { cx } from '../lib/utils';
@@ -75,7 +76,23 @@ export function SettingsPage() {
         AI 只在你点击生成时工作。没有配置也能用阶段模板。
       </p>
 
-      <form onSubmit={handleSave} className="mt-7 space-y-4">
+      <Link
+        to="/extensions"
+        className="mt-5 flex items-center justify-between gap-3 rounded-3xl border border-line bg-surface p-4 shadow-card transition hover:border-ink-faint/60"
+      >
+        <div>
+          <p className="text-[14px] font-semibold">外观与扩展</p>
+          <p className="mt-0.5 text-[11.5px] text-ink-faint">
+            换主题、导入主题包、语言包入口
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 text-[11.5px] text-ink-soft">
+          打开
+          <ChevronRightIcon className="h-4 w-4" />
+        </span>
+      </Link>
+
+      <form onSubmit={handleSave} className="mt-5 space-y-4">
         <section className="card p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -102,7 +119,7 @@ export function SettingsPage() {
                   className={cx(
                     'w-full rounded-2xl border p-4 text-left transition-colors',
                     active
-                      ? 'border-ink/70 bg-white shadow-card'
+                      ? 'border-ink/70 bg-surface shadow-card'
                       : 'border-line bg-paper/40 hover:border-ink-faint/50'
                   )}
                 >
@@ -112,7 +129,7 @@ export function SettingsPage() {
                         'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition',
                         active
                           ? 'border-ink bg-ink text-paper'
-                          : 'border-line bg-white text-transparent'
+                          : 'border-line bg-surface text-transparent'
                       )}
                     >
                       <CheckIcon className="h-3 w-3" />
@@ -273,7 +290,7 @@ export function SettingsPage() {
         </section>
       </form>
 
-      <section className="mt-4 rounded-3xl border border-line/70 bg-white/60 p-5">
+      <section className="mt-4 rounded-3xl border border-line/70 bg-surface/60 p-5">
         <h2 className="text-[14px] font-semibold">关于你的数据</h2>
         <ul className="mt-3 space-y-2 text-[12.5px] leading-relaxed text-ink-soft">
           <li className="flex gap-2">

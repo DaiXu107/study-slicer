@@ -108,7 +108,7 @@ export function Dashboard() {
             ['02', '选文献与方向', 'AI 帮读，你来判断'],
             ['03', '每天一小块', '45 分钟内可完成'],
           ].map(([num, title, desc]) => (
-            <div key={num} className="rounded-2xl border border-line/70 bg-white/60 px-4 py-3">
+            <div key={num} className="rounded-2xl border border-line/70 bg-surface/60 px-4 py-3">
               <p className="font-display text-[12px] text-accent">{num}</p>
               <p className="mt-1 text-[13.5px] font-medium">{title}</p>
               <p className="mt-0.5 text-[11.5px] text-ink-faint">{desc}</p>
@@ -145,7 +145,7 @@ export function Dashboard() {
         <Link
           to="/wizard"
           aria-label="新建课题"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-white text-ink transition hover:border-ink-faint/60 active:scale-95"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition hover:border-ink-faint/60 active:scale-95"
         >
           <PlusIcon className="h-5 w-5" />
         </Link>
@@ -166,7 +166,7 @@ export function Dashboard() {
         </div>
       ) : null}
 
-      <div className="mt-6 grid grid-cols-3 divide-x divide-line rounded-3xl border border-line bg-white shadow-card">
+      <div className="mt-6 grid grid-cols-3 divide-x divide-line rounded-3xl border border-line bg-surface shadow-card">
         <Stat
           label="今日"
           value={todays.length ? `${doneToday}/${todays.length}` : '—'}
@@ -248,7 +248,7 @@ export function Dashboard() {
           <h2 className="text-[13px] font-medium tracking-wide text-ink-soft">明日预告</h2>
           <span className="text-[11px] text-ink-faint">提前知道，就不慌</span>
         </div>
-        <div className="rounded-3xl border border-dashed border-line bg-white/50 px-5 py-4">
+        <div className="rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-4">
           {tomorrowTasks.length ? (
             <ul className="space-y-2.5">
               {tomorrowTasks.map((t) => (

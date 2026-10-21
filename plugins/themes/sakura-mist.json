@@ -1,0 +1,27 @@
+{
+  "schema": "study-slicer-plugin",
+  "version": 1,
+  "type": "theme",
+  "id": "sakura-mist",
+  "name": "樱雾",
+  "author": "Study Slicer Community",
+  "description": "柔和的樱粉色阅读主题，适合春天和长文阅读。",
+  "colorScheme": "light",
+  "tokens": {
+    "paper": "#faf5f6",
+    "surface": "#ffffff",
+    "done": "#f6f0f2",
+    "ink": "#3a2830",
+    "inkSoft": "#6f5a62",
+    "inkFaint": "#a08e95",
+    "line": "#eadde1",
+    "accent": "#c96f8a",
+    "accentSoft": "#f9e8ee",
+    "accentDeep": "#a64865",
+    "moss": "#7d9a7f",
+    "mossSoft": "#eff4ee",
+    "mossDeep": "#5c775f",
+    "sun": "#e6b86b",
+    "glow": "#ffffff"
+  }
+}

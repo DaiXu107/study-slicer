@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* 默认「纸感」主题，运行时由 ThemeProvider 覆盖 */
+  --c-paper: 248 246 241;
+  --c-surface: 255 255 255;
+  --c-done: 243 246 241;
+  --c-ink: 28 43 58;
+  --c-ink-soft: 83 100 115;
+  --c-ink-faint: 139 152 164;
+  --c-line: 232 227 216;
+  --c-accent: 223 122 62;
+  --c-accent-soft: 251 238 227;
+  --c-accent-deep: 191 93 39;
+  --c-moss: 111 155 120;
+  --c-moss-soft: 237 244 238;
+  --c-moss-deep: 82 122 91;
+  --c-sun: 240 196 106;
+  --c-glow: 255 255 255;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
@@ -12,15 +31,15 @@
     @apply bg-paper font-sans text-ink antialiased;
     background-image: radial-gradient(
       1100px 560px at 50% -10%,
-      rgba(255, 255, 255, 0.95),
-      rgba(248, 246, 241, 0) 72%
+      rgb(var(--c-glow) / 0.95),
+      rgb(var(--c-paper) / 0) 72%
     );
     min-height: 100vh;
   }
 
   ::selection {
-    background: #f3d9c6;
-    color: #1c2b3a;
+    background: rgb(var(--c-accent-soft));
+    color: rgb(var(--c-ink));
   }
 
   button,
@@ -49,11 +68,11 @@
   }
 
   .btn-primary {
-    @apply bg-ink text-paper shadow-card hover:bg-[#26384c];
+    @apply bg-ink text-paper shadow-card hover:bg-ink/90;
   }
 
   .btn-secondary {
-    @apply border border-line bg-white text-ink hover:border-ink-faint/60;
+    @apply border border-line bg-surface text-ink hover:border-ink-faint/60;
   }
 
   .btn-ghost {
@@ -65,11 +84,11 @@
   }
 
   .btn-danger {
-    @apply border border-line bg-white text-ink-soft hover:border-accent/50 hover:text-accent-deep;
+    @apply border border-line bg-surface text-ink-soft hover:border-accent/50 hover:text-accent-deep;
   }
 
   .field {
-    @apply w-full rounded-2xl border border-line bg-white px-4 py-3 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-faint/70 focus:border-ink-faint/70 focus:ring-4 focus:ring-ink/5;
+    @apply w-full rounded-2xl border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-faint/70 focus:border-ink-faint/70 focus:ring-4 focus:ring-ink/5;
   }
 
   .field-sm {
@@ -85,7 +104,7 @@
   }
 
   .card {
-    @apply rounded-3xl border border-line bg-white shadow-card;
+    @apply rounded-3xl border border-line bg-surface shadow-card;
   }
 
   .eyebrow {
@@ -93,7 +112,7 @@
   }
 
   .chip {
-    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-[12.5px] text-ink-soft transition-colors;
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-2 text-[12.5px] text-ink-soft transition-colors;
   }
 
   .chip-active {

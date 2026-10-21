@@ -217,8 +217,8 @@ export function ReferenceExport({ projects, onClose }: Props) {
                         className={cx(
                           'flex cursor-pointer items-start gap-3 rounded-2xl border px-3.5 py-3 transition-colors',
                           checked
-                            ? 'border-ink/40 bg-white'
-                            : 'border-line bg-white/50 hover:border-ink-faint/50'
+                            ? 'border-ink/40 bg-surface'
+                            : 'border-line bg-surface/50 hover:border-ink-faint/50'
                         )}
                       >
                         <input
@@ -232,7 +232,7 @@ export function ReferenceExport({ projects, onClose }: Props) {
                             'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition',
                             checked
                               ? 'border-ink bg-ink text-paper'
-                              : 'border-line bg-white text-transparent'
+                              : 'border-line bg-surface text-transparent'
                           )}
                         >
                           <CheckIcon className="h-3 w-3" />
@@ -266,7 +266,7 @@ export function ReferenceExport({ projects, onClose }: Props) {
               rows={10}
               aria-label="参考文献预览"
               className={cx(
-                'w-full resize-y rounded-2xl border border-line bg-white p-3.5 text-[11.5px] leading-relaxed text-ink-soft outline-none',
+                'w-full resize-y rounded-2xl border border-line bg-surface p-3.5 text-[11.5px] leading-relaxed text-ink-soft outline-none',
                 styleInfo.monospace ? 'font-mono' : ''
               )}
             />

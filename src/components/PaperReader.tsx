@@ -246,7 +246,7 @@ export function PaperReader({
             </span>
           ) : null}
           {paper.doi ? (
-            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] text-ink-faint">
+            <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] text-ink-faint">
               DOI {paper.doi}
             </span>
           ) : null}
@@ -274,7 +274,7 @@ export function PaperReader({
           站内展示摘要、解读与笔记。出版社页面通常禁止嵌入，所以原文会在新标签页打开。
         </p>
 
-        <section className="mt-6 rounded-3xl border border-line bg-white p-5 shadow-card">
+        <section className="mt-6 rounded-3xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[15px] font-semibold">摘要</h2>
             <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] text-accent-deep">
@@ -331,7 +331,7 @@ export function PaperReader({
                 rows={10}
                 maxLength={100000}
                 placeholder="从 PDF 或网页复制正文，粘贴到这里…"
-                className="mt-3 w-full resize-y rounded-2xl border border-line bg-paper/40 px-3.5 py-3 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
+                className="mt-3 w-full resize-y rounded-2xl border border-line bg-paper/40 px-3.5 py-3 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-surface focus:ring-4 focus:ring-ink/5"
               />
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[10px] text-ink-faint">
@@ -384,7 +384,7 @@ export function PaperReader({
             onChange={(event) => onUpdatePaper({ note: event.target.value })}
             rows={4}
             placeholder="它和我的课题有什么关系？哪一句值得记住？"
-            className="mt-2 w-full resize-y rounded-2xl border border-line bg-paper/40 px-3.5 py-3 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
+            className="mt-2 w-full resize-y rounded-2xl border border-line bg-paper/40 px-3.5 py-3 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-surface focus:ring-4 focus:ring-ink/5"
           />
           <p className="mt-1.5 text-[10.5px] text-ink-faint">笔记会自动保存到本机。</p>
         </section>
@@ -392,7 +392,7 @@ export function PaperReader({
         {relatedLoading || related.length || relatedError ? (
           <section
             ref={relatedRef}
-            className="mt-4 scroll-mt-20 rounded-3xl border border-line bg-white p-5 shadow-card"
+            className="mt-4 scroll-mt-20 rounded-3xl border border-line bg-surface p-5 shadow-card"
           >
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-[15px] font-semibold">OpenAlex 相关文献</h2>
@@ -461,7 +461,7 @@ export function PaperReader({
       </main>
 
       {selection ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
           <div className="mx-auto max-w-2xl">
             <div className="flex items-start justify-between gap-3">
               <p className="line-clamp-2 min-w-0 text-[12px] leading-relaxed text-ink-soft">

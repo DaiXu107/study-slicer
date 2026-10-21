@@ -13,8 +13,8 @@ export function EmptyState({ icon, title, description, action, compact }: Props)
     <div
       className={
         compact
-          ? 'flex flex-col items-start gap-2 rounded-3xl border border-dashed border-line bg-white/50 px-5 py-6'
-          : 'flex flex-col items-center gap-4 rounded-4xl border border-dashed border-line bg-white/60 px-7 py-14 text-center'
+          ? 'flex flex-col items-start gap-2 rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-6'
+          : 'flex flex-col items-center gap-4 rounded-4xl border border-dashed border-line bg-surface/60 px-7 py-14 text-center'
       }
     >
       {icon ? (
