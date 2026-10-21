@@ -43,6 +43,14 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
+/** 去掉 DOI 的 URL / doi: 前缀，统一存裸 DOI */
+export function normalizeDoi(doi?: string): string {
+  return (doi ?? '')
+    .trim()
+    .replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+    .replace(/^doi:\s*/i, '');
+}
+
 export function pluralAuthors(authors: string[]): string {
   if (!authors.length) return '作者未知';
   if (authors.length <= 3) return authors.join('、');

@@ -31,6 +31,14 @@ export interface Paper {
   year: number | null;
   url: string;
   citedByCount: number;
+  /** 期刊 / 来源名称，用于生成参考文献 */
+  journal?: string;
+  /** 裸 DOI，不带 https://doi.org/ 前缀 */
+  doi?: string;
+  volume?: string;
+  issue?: string;
+  /** 起止页码，例如 45-67 */
+  pages?: string;
   /** AI 或用户写下的三句话解读 */
   interpretation?: string;
   /** 阅读笔记 */

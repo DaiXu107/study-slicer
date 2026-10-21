@@ -164,6 +164,8 @@ export function Wizard() {
     title: '',
     authors: '',
     year: '',
+    journal: '',
+    doi: '',
     abstract: '',
     url: '',
   });
@@ -301,7 +303,15 @@ export function Wizard() {
       selectedIds:
         d.selectedIds.length < MAX_PAPERS ? [...d.selectedIds, paper.id] : d.selectedIds,
     }));
-    setManual({ title: '', authors: '', year: '', abstract: '', url: '' });
+    setManual({
+      title: '',
+      authors: '',
+      year: '',
+      journal: '',
+      doi: '',
+      abstract: '',
+      url: '',
+    });
     setManualOpen(false);
     setSearchError('');
   }
@@ -884,6 +894,20 @@ export function Wizard() {
                       onChange={(e) => setManual((m) => ({ ...m, year: e.target.value }))}
                       placeholder="年份"
                       inputMode="numeric"
+                      className="field field-sm"
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      value={manual.journal}
+                      onChange={(e) => setManual((m) => ({ ...m, journal: e.target.value }))}
+                      placeholder="期刊 / 来源（可选，导出引用用）"
+                      className="field field-sm"
+                    />
+                    <input
+                      value={manual.doi}
+                      onChange={(e) => setManual((m) => ({ ...m, doi: e.target.value }))}
+                      placeholder="DOI（可选）"
                       className="field field-sm"
                     />
                   </div>
