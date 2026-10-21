@@ -181,7 +181,7 @@ export function ReferenceExport({ projects, onClose }: Props) {
           <div className="mt-5 flex items-center justify-between gap-3">
             <p className="text-[11.5px] text-ink-faint">
               已选 {selected.size} / {entries.length} 篇
-              <span className="ml-1.5 text-ink-faint/70">· 默认勾选核心文献</span>
+              <span className="ml-1.5 text-ink-faint/70">· 默认勾选核心文献，无核心时全选</span>
             </p>
             <div className="flex shrink-0 items-center gap-2 text-[11.5px]">
               <button
