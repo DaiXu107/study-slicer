@@ -252,7 +252,7 @@ export function PaperReader({
           ) : null}
           {paper.manual ? (
             <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] text-accent-deep">
-              手动录入
+              本地
             </span>
           ) : null}
         </div>

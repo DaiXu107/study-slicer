@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
+import { LiteratureImport } from '../components/LiteratureImport';
 import { PaperReader } from '../components/PaperReader';
 import { ReferenceExport } from '../components/ReferenceExport';
 import {
   BookIcon,
   DownloadIcon,
   ExternalLinkIcon,
+  PlusIcon,
   QuoteIcon,
 } from '../components/Icons';
 import type { Paper } from '../types';
@@ -72,7 +74,7 @@ function PaperCard({
         ) : null}
         {paper.manual ? (
           <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-accent-deep">
-            手动录入
+            本地
           </span>
         ) : null}
       </p>
@@ -117,6 +119,7 @@ export function Library() {
     null
   );
   const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const withPapers = projects.filter((p) => p.papers.length > 0);
   const total = withPapers.reduce((sum, p) => sum + p.papers.length, 0);
@@ -150,21 +153,30 @@ export function Library() {
 
   return (
     <div className="animate-rise">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="eyebrow">Library</p>
-          <h1 className="mt-2.5 text-[30px] font-semibold leading-tight tracking-tight">
-            文献库
-          </h1>
-          <p className="mt-1.5 text-[13.5px] text-ink-soft">
-            {total ? `${total} 篇已拉取文献，笔记会自动保存。` : '读过的，值得留下来。'}
-          </p>
-        </div>
+      <p className="eyebrow">Library</p>
+      <h1 className="mt-2.5 text-[30px] font-semibold leading-tight tracking-tight">
+        文献库
+      </h1>
+      <p className="mt-1.5 text-[13.5px] text-ink-soft">
+        {total ? `${total} 篇已拉取文献，笔记会自动保存。` : '读过的，值得留下来。'}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {projects.length ? (
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="btn btn-primary btn-sm"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            添加文献
+          </button>
+        ) : null}
         {total ? (
           <button
             type="button"
             onClick={() => setExportOpen(true)}
-            className="btn btn-secondary btn-sm mt-2 shrink-0"
+            className="btn btn-secondary btn-sm"
           >
             <DownloadIcon className="h-3.5 w-3.5" />
             导出引用
@@ -202,7 +214,11 @@ export function Library() {
           <EmptyState
             icon={<BookIcon className="h-6 w-6" />}
             title="文献库还空着"
-            description="在课题向导里勾选的文献，会自动收进这里。也可以先收藏一篇今天读到的文章。"
+            description={
+              projects.length
+                ? '在课题向导里勾选的文献会自动收进这里。也可以点「添加文献」手动录入，或导入 BibTeX / RIS 文件。'
+                : '先创建一个课题，把文献归到课题里；也可以从课题向导检索第一批文献。'
+            }
             action={
               <Link to="/wizard" className="btn btn-primary">
                 去检索文献
@@ -228,6 +244,8 @@ export function Library() {
       {exportOpen ? (
         <ReferenceExport projects={projects} onClose={() => setExportOpen(false)} />
       ) : null}
+
+      {importOpen ? <LiteratureImport onClose={() => setImportOpen(false)} /> : null}
     </div>
   );
 }
