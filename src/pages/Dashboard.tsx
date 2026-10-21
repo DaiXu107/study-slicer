@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Confetti } from '../components/Confetti';
 import { EmptyState } from '../components/EmptyState';
-import { ArrowRightIcon, PlusIcon, SparklesIcon, SunIcon } from '../components/Icons';
+import {
+  ArrowRightIcon,
+  PlusIcon,
+  ShieldIcon,
+  SparklesIcon,
+  SunIcon,
+} from '../components/Icons';
 import { StageBadge } from '../components/StageBadge';
 import { TaskCard } from '../components/TaskCard';
 import type { DailyTask } from '../types';
@@ -128,6 +134,12 @@ export function Dashboard() {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="text-[13.5px] text-ink-soft">{activeProject.title}</span>
             <StageBadge stage={activeProject.stage} />
+            {activeProject.aiMode === 'tasks-only' ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-moss-soft px-2 py-0.5 text-[10px] font-medium text-moss-deep">
+                <ShieldIcon className="h-3 w-3" />
+                AI 仅规划
+              </span>
+            ) : null}
           </div>
         </div>
         <Link

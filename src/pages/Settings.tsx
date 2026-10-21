@@ -1,10 +1,24 @@
 import { useState, type FormEvent } from 'react';
+import { CheckIcon } from '../components/Icons';
 import { DEFAULT_SETTINGS, type Settings } from '../types';
 import { testConnection } from '../lib/llm';
 import { cx } from '../lib/utils';
 import { useApp } from '../store/AppContext';
 
 type Status = { tone: 'ok' | 'error' | 'info'; text: string } | null;
+
+const AI_MODES: Array<{ value: Settings['aiMode']; title: string; description: string }> = [
+  {
+    value: 'full',
+    title: '完整辅助',
+    description: 'AI 可以生成文献三句话解读与研究方向，也可以拆解每日任务。',
+  },
+  {
+    value: 'tasks-only',
+    title: '仅任务规划 · 严格',
+    description: 'AI 不参与解读与方向生成；第 3 步完全由你完成，只在第 4 步拆解任务。',
+  },
+];
 
 export function SettingsPage() {
   const { settings, saveSettings } = useApp();
@@ -25,6 +39,7 @@ export function SettingsPage() {
       baseUrl: form.baseUrl.trim(),
       apiKey: form.apiKey.trim(),
       model: form.model.trim(),
+      aiMode: form.aiMode,
     });
     setSaved(true);
     setStatus({ tone: 'ok', text: '已保存到本机浏览器。' });
@@ -39,6 +54,7 @@ export function SettingsPage() {
         baseUrl: form.baseUrl.trim(),
         apiKey: form.apiKey.trim(),
         model: form.model.trim(),
+        aiMode: form.aiMode,
       });
       setStatus({ tone: 'ok', text: `连接成功，模型回复：${reply}` });
     } catch (err) {
@@ -59,7 +75,67 @@ export function SettingsPage() {
         AI 只在你点击生成时工作。没有配置也能用阶段模板。
       </p>
 
-      <form onSubmit={handleSave} className="mt-7">
+      <form onSubmit={handleSave} className="mt-7 space-y-4">
+        <section className="card p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[16px] font-semibold">AI 参与范围</h2>
+              <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">
+                作为新建课题的默认值，向导第 1 步仍可单独调整。
+              </p>
+            </div>
+            <span className="whitespace-nowrap rounded-full bg-paper px-2.5 py-1 text-[10.5px] text-ink-faint">
+              内容边界
+            </span>
+          </div>
+
+          <div role="radiogroup" aria-label="AI 参与范围" className="mt-4 grid gap-2.5">
+            {AI_MODES.map((mode) => {
+              const active = form.aiMode === mode.value;
+              return (
+                <button
+                  key={mode.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => update('aiMode', mode.value)}
+                  className={cx(
+                    'w-full rounded-2xl border p-4 text-left transition-colors',
+                    active
+                      ? 'border-ink/70 bg-white shadow-card'
+                      : 'border-line bg-paper/40 hover:border-ink-faint/50'
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cx(
+                        'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition',
+                        active
+                          ? 'border-ink bg-ink text-paper'
+                          : 'border-line bg-white text-transparent'
+                      )}
+                    >
+                      <CheckIcon className="h-3 w-3" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-semibold text-ink">
+                        {mode.title}
+                      </span>
+                      <span className="mt-1 block text-[12px] leading-relaxed text-ink-soft">
+                        {mode.description}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="hint">
+            严格模式下，第 3 步不会调用任何 AI，也不会生成可复制提示词；第 4 步只读取你写好的方向，不读取文献摘要。已有课题不受影响。
+          </p>
+        </section>
+
         <section className="card p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>

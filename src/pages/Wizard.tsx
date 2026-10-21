@@ -10,6 +10,7 @@ import {
   ExternalLinkIcon,
   PlusIcon,
   RefreshIcon,
+  ShieldIcon,
   SparklesIcon,
   TrashIcon,
   XIcon,
@@ -150,7 +151,11 @@ export function Wizard() {
   const { settings, createProject } = useApp();
   const navigate = useNavigate();
 
-  const [draft, setDraft] = useState<WizardDraft>(() => loadDraft() ?? EMPTY_DRAFT);
+  const [draft, setDraft] = useState<WizardDraft>(() => {
+    const saved = loadDraft();
+    if (!saved) return { ...EMPTY_DRAFT, aiMode: settings.aiMode };
+    return { ...saved, aiMode: saved.aiMode ?? settings.aiMode };
+  });
 
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -173,6 +178,8 @@ export function Wizard() {
   const [taskNotice, setTaskNotice] = useState('');
 
   const hasKey = Boolean(settings.apiKey.trim());
+  /** 严格模式：AI 不参与解读与方向，只在第 4 步拆任务 */
+  const strictMode = draft.aiMode === 'tasks-only';
   const stage = (draft.stage || '文献综述') as Stage;
   const selectedPapers = draft.results.filter((p) => draft.selectedIds.includes(p.id));
   const selectedDirections = draft.directions.filter((d) => d.selected);
@@ -300,6 +307,8 @@ export function Wizard() {
   }
 
   async function generateAnalysis() {
+    // 严格模式硬闸门：无论 UI 如何变化，第 3 步都不发起任何 AI 请求
+    if (strictMode) return;
     if (!hasKey) {
       setCopyOpen(true);
       return;
@@ -382,6 +391,7 @@ export function Wizard() {
   }
 
   async function copyPrompt() {
+    if (strictMode) return;
     const ok = await copyText(
       buildCopyPrompt(draft.title.trim(), stage, draft.keywords, selectedPapers)
     );
@@ -462,7 +472,8 @@ export function Wizard() {
               draft.title.trim(),
               stage,
               activeDirections,
-              todayStr()
+              todayStr(),
+              strictMode
             ),
           },
         ],
@@ -554,6 +565,7 @@ export function Wizard() {
       stage: draft.stage,
       keywords: draft.keywords.trim(),
       createdAt: new Date().toISOString(),
+      aiMode: strictMode ? 'tasks-only' : 'full',
       papers: draft.results.map((p) => ({
         ...p,
         selected: draft.selectedIds.includes(p.id),
@@ -571,7 +583,7 @@ export function Wizard() {
         })),
     };
     createProject(project);
-    setDraft(EMPTY_DRAFT);
+    setDraft({ ...EMPTY_DRAFT, aiMode: settings.aiMode });
     clearDraft();
     navigate('/');
   }
@@ -579,7 +591,7 @@ export function Wizard() {
   function restartDraft() {
     if (!window.confirm('清空当前向导草稿，从第 1 步重新开始？')) return;
     clearDraft();
-    setDraft(EMPTY_DRAFT);
+    setDraft({ ...EMPTY_DRAFT, aiMode: settings.aiMode });
     setSearchError('');
     setAnalysisError('');
     setTaskError('');
@@ -716,6 +728,60 @@ export function Wizard() {
                     className="field"
                   />
                   <p className="hint">留空就用课题标题去检索文献。</p>
+                </div>
+
+                <div>
+                  <span className="label">AI 参与范围</span>
+                  <div
+                    role="radiogroup"
+                    aria-label="AI 参与范围"
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    {[
+                      {
+                        value: 'full' as const,
+                        title: '完整辅助',
+                        desc: 'AI 可写解读与方向',
+                      },
+                      {
+                        value: 'tasks-only' as const,
+                        title: '仅任务规划',
+                        desc: '第 3 步完全手动',
+                      },
+                    ].map((mode) => {
+                      const active = draft.aiMode === mode.value;
+                      return (
+                        <button
+                          key={mode.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => patch({ aiMode: mode.value })}
+                          className={cx(
+                            'rounded-2xl border px-3.5 py-3 text-left transition-colors',
+                            active
+                              ? 'border-ink bg-ink text-paper'
+                              : 'border-line bg-white text-ink-soft hover:border-ink-faint/60'
+                          )}
+                        >
+                          <span className="block text-[13px] font-semibold">{mode.title}</span>
+                          <span
+                            className={cx(
+                              'mt-0.5 block text-[10px]',
+                              active ? 'text-paper/70' : 'text-ink-faint'
+                            )}
+                          >
+                            {mode.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="hint">
+                    {strictMode
+                      ? '严格模式：第 3 步不调用 AI、不生成可复制提示词，解读与方向全部由你撰写；AI 只在第 4 步拆任务。切换模式不会自动删除已有草稿内容。'
+                      : 'AI 可以生成文献解读与研究方向。所有生成内容仍然可以修改。'}
+                  </p>
                 </div>
               </form>
 
@@ -982,9 +1048,35 @@ export function Wizard() {
                 这些文献，和你的课题有什么关系？
               </h1>
               <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
-                让 AI 先读一遍，给每篇三句话，再提三个可切入的方向。你来做最后的判断。
+                {strictMode
+                  ? '这一步不调用 AI。请自己写下每篇的三句话解读，并提出 1–2 个方向。'
+                  : '让 AI 先读一遍，给每篇三句话，再提三个可切入的方向。你来做最后的判断。'}
               </p>
 
+              {strictMode ? (
+                <div className="card mt-5 p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-moss-soft text-moss-deep">
+                      <ShieldIcon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-[15px] font-semibold">严格模式：这一步没有 AI</h2>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
+                        当前课题选择了「仅任务规划」。AI 不会生成文献解读，不会提出研究方向，也不会生成可复制提示词。
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-2 rounded-2xl bg-paper/70 px-4 py-3 text-[11.5px] leading-relaxed text-ink-soft">
+                    <p>① 自己写每篇的三句话解读（可以留空）</p>
+                    <p>② 在下方手动添加 1–2 个方向，再进入第 4 步</p>
+                  </div>
+                  <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">
+                    第 4 步 AI 只会读取你写的方向标题与描述，不会读取文献摘要，也不会新增研究内容。文献检索来自 OpenAlex
+                    数据库，不属于生成式 AI。
+                  </p>
+                </div>
+              ) : (
+                <>
               <div className="card mt-5 p-5">
                 <div className="flex items-start gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-deep">
@@ -1084,11 +1176,15 @@ export function Wizard() {
                   />
                 </div>
               ) : null}
+                </>
+              )}
 
               <div className="mt-7">
                 <div className="mb-3 flex items-end justify-between">
                   <h2 className="text-[16px] font-semibold">文献解读</h2>
-                  <span className="text-[11px] text-ink-faint">每篇三句话，可修改</span>
+                  <span className="text-[11px] text-ink-faint">
+                    {strictMode ? '由你撰写' : '每篇三句话，可修改'}
+                  </span>
                 </div>
 
                 <div className="space-y-3">
@@ -1101,7 +1197,7 @@ export function Wizard() {
                         {pluralAuthors(paper.authors)} · {paper.year ?? '年份未知'}
                       </p>
 
-                      {!hasKey && paper.abstract ? (
+                      {(!hasKey || strictMode) && paper.abstract ? (
                         <p className="mt-2 line-clamp-4 rounded-xl bg-paper/70 px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">
                           {paper.abstract}
                         </p>
@@ -1133,7 +1229,11 @@ export function Wizard() {
                             }))
                           }
                           rows={3}
-                          placeholder="可以等 AI 生成，也可以自己写。"
+                          placeholder={
+                            strictMode
+                              ? '自己写三句话：研究问题 / 方法 / 与课题的关系。'
+                              : '可以等 AI 生成，也可以自己写。'
+                          }
                           className="w-full resize-y rounded-2xl border border-line bg-paper/40 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
                         />
                       </label>
@@ -1283,13 +1383,24 @@ export function Wizard() {
                 把方向，拆成每天的一小块
               </h1>
               <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
-                10–15 个任务，每个 20–45 分钟。先跑起来，再慢慢调整。
+                {strictMode
+                  ? '严格模式：AI 只把你的方向拆成 20–45 分钟的行动步骤，不新增研究内容。'
+                  : '10–15 个任务，每个 20–45 分钟。先跑起来，再慢慢调整。'}
               </p>
 
               <div className="mt-4 rounded-2xl bg-white/60 px-4 py-3 text-[11.5px] leading-relaxed text-ink-soft">
                 <span className="font-medium text-ink">{stage} · 阶段策略 </span>
                 {STAGE_STRATEGY[stage]}
               </div>
+
+              {strictMode ? (
+                <div className="mt-2 flex items-start gap-2 rounded-2xl border border-moss/20 bg-moss-soft/60 px-4 py-3 text-[11.5px] leading-relaxed text-moss-deep">
+                  <ShieldIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    当前为严格模式。发送给 AI 的只有课题标题、阶段和你写的方向标题与描述；不会发送文献摘要、解读或研究结论。
+                  </span>
+                </div>
+              ) : null}
 
               {!draft.tasks.length ? (
                 <div className="card mt-4 p-5">
@@ -1300,7 +1411,9 @@ export function Wizard() {
                     <div>
                       <h2 className="text-[15px] font-semibold">生成每日任务</h2>
                       <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
-                        从今天开始，每天 1–2 块。生成后每一块都能改标题、日期和完成标准。
+                        {strictMode
+                          ? 'AI 只负责把你写好的方向拆成行动步骤。生成后仍可逐条修改；也可以完全不调用 AI，使用阶段模板。'
+                          : '从今天开始，每天 1–2 块。生成后每一块都能改标题、日期和完成标准。'}
                       </p>
                     </div>
                   </div>
@@ -1331,7 +1444,7 @@ export function Wizard() {
                         onClick={() => useTemplateTasks()}
                         className="btn btn-secondary btn-sm"
                       >
-                        直接用阶段模板
+                        {strictMode ? '完全不调用 AI：用阶段模板' : '直接用阶段模板'}
                       </button>
                     ) : null}
                   </div>

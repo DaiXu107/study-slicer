@@ -78,7 +78,8 @@ export function buildTaskPrompt(
   projectTitle: string,
   stage: Stage,
   directions: Direction[],
-  startDate: string
+  startDate: string,
+  strict = false
 ): string {
   const directionText = directions
     .map((d, i) => `${i + 1}. ${d.title}：${d.description}（可行性：${d.feasibility}）`)
@@ -98,7 +99,18 @@ export function buildTaskPrompt(
     '- 同一天最多安排 2 个任务，按天循序渐进；',
     '- 每个任务都要有可检查的完成标准（做到什么算完成），不要写“理解”“熟悉”这类无法验证的词；',
     '- 任务之间不要重复，后面的任务可以建立在前面的产出上；',
+    '- 只拆解上面列出的方向，不要自行新增研究方向；',
     `- 阶段策略：${STAGE_STRATEGY[stage]}`,
+    strict
+      ? [
+          '',
+          '【严格模式约束】',
+          '- 用户自己负责文献解读与研究方向的全部内容。你只做行动规划。',
+          '- 不得新增、改写或扩展研究方向，不得替用户写研究结论、文献解读或学术观点。',
+          '- 任务标题与描述只写“做什么、怎么做、产出什么”，不得包含新的研究判断。',
+          '- 输入中没有文献摘要，不要猜测或补写文献内容。',
+        ].join('\n')
+      : '',
     '',
     '严格只输出以下 JSON，不要 markdown 代码块，不要额外解释：',
     '{"tasks":[{"dayOffset":0,"title":"20 字以内的任务标题","description":"一两句怎么做","criteria":"一句话完成标准","minutes":30}]}',

@@ -37,6 +37,7 @@ function sanitizeProject(raw: unknown): Project | null {
     createdAt: p.createdAt ?? new Date().toISOString(),
     papers: Array.isArray(p.papers) ? p.papers : [],
     directions: Array.isArray(p.directions) ? p.directions : [],
+    aiMode: p.aiMode === 'tasks-only' ? 'tasks-only' : p.aiMode === 'full' ? 'full' : undefined,
     dailyTasks: Array.isArray(p.dailyTasks)
       ? p.dailyTasks.map((t) => ({
           ...t,
@@ -57,9 +58,13 @@ function loadState(): PersistedState {
     const projects = Array.isArray(parsed.projects)
       ? parsed.projects.map(sanitizeProject).filter((p): p is Project => Boolean(p))
       : [];
+    const settings: Settings = { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) };
+    if (settings.aiMode !== 'full' && settings.aiMode !== 'tasks-only') {
+      settings.aiMode = 'full';
+    }
     return {
       projects,
-      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+      settings,
       activeProjectId:
         parsed.activeProjectId && projects.some((p) => p.id === parsed.activeProjectId)
           ? parsed.activeProjectId

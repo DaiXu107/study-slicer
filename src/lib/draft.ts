@@ -27,6 +27,12 @@ export function loadDraft(): WizardDraft | null {
       selectedIds: Array.isArray(parsed.selectedIds) ? parsed.selectedIds : [],
       directions: Array.isArray(parsed.directions) ? parsed.directions : [],
       tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+      aiMode:
+        parsed.aiMode === 'tasks-only'
+          ? 'tasks-only'
+          : parsed.aiMode === 'full'
+            ? 'full'
+            : undefined,
     };
   } catch {
     return null;

@@ -17,6 +17,12 @@ export const STAGES: Stage[] = [
 
 export type Feasibility = '高' | '中' | '低';
 
+/**
+ * full：AI 可生成文献解读与研究方向
+ * tasks-only：严格模式，AI 不参与内容创作，只在第 4 步拆解用户写好的方向
+ */
+export type AiMode = 'full' | 'tasks-only';
+
 export interface Paper {
   id: string;
   title: string;
@@ -69,12 +75,16 @@ export interface Project {
   papers: Paper[];
   directions: Direction[];
   dailyTasks: DailyTask[];
+  /** 创建课题时使用的 AI 参与范围，用于事后追溯 */
+  aiMode?: AiMode;
 }
 
 export interface Settings {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /** 下一次新建课题使用的 AI 参与范围 */
+  aiMode: AiMode;
 }
 
 export interface PersistedState {
@@ -93,10 +103,13 @@ export interface WizardDraft {
   selectedIds: string[];
   directions: Direction[];
   tasks: DailyTask[];
+  /** 本次向导固定的 AI 参与范围 */
+  aiMode?: AiMode;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   baseUrl: 'https://api.openai.com/v1',
   apiKey: '',
   model: 'gpt-4o-mini',
+  aiMode: 'full',
 };

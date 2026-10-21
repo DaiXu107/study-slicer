@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
   LayersIcon,
   PlusIcon,
+  ShieldIcon,
   TrashIcon,
 } from '../components/Icons';
 import { ProgressBar } from '../components/ProgressBar';
@@ -64,6 +65,12 @@ export function Projects() {
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <StageBadge stage={project.stage} />
+                    {project.aiMode === 'tasks-only' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-moss-soft px-2.5 py-1 text-[10px] font-medium text-moss-deep">
+                        <ShieldIcon className="h-3 w-3" />
+                        AI 仅规划
+                      </span>
+                    ) : null}
                     <span className="text-[11px] text-ink-faint">
                       {formatCreatedAt(project.createdAt)} 开始
                     </span>
