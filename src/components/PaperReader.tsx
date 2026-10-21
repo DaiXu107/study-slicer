@@ -10,6 +10,7 @@ import {
   BookIcon,
   CheckIcon,
   ExternalLinkIcon,
+  PlusIcon,
   SearchIcon,
   XIcon,
 } from './Icons';
@@ -32,11 +33,12 @@ export function PaperReader({
   onAddPaper,
 }: Props) {
   const { settings } = useApp();
-  const contentRef = useRef<HTMLDivElement>(null);
   const relatedRef = useRef<HTMLDivElement>(null);
   const lastSelectionRef = useRef('');
 
   const [selection, setSelection] = useState('');
+  const [editingFullText, setEditingFullText] = useState(false);
+  const [fullTextDraft, setFullTextDraft] = useState(paper.fullText ?? '');
   const [translation, setTranslation] = useState('');
   const [translating, setTranslating] = useState(false);
   const [related, setRelated] = useState<Paper[]>([]);
@@ -64,9 +66,14 @@ export function PaperReader({
       if (!sel || sel.isCollapsed) return;
       const text = sel.toString().replace(/\s+/g, ' ').trim();
       if (!text || text.length < 2) return;
-      if (sel.rangeCount && contentRef.current) {
+      if (sel.rangeCount) {
         const range = sel.getRangeAt(0);
-        if (!contentRef.current.contains(range.commonAncestorContainer)) return;
+        const ancestor = range.commonAncestorContainer;
+        const element =
+          ancestor.nodeType === Node.TEXT_NODE
+            ? ancestor.parentElement
+            : (ancestor as Element);
+        if (!element?.closest('[data-reader-text]')) return;
       }
       const next = text.slice(0, 300);
       if (next === lastSelectionRef.current) return;
@@ -175,6 +182,13 @@ export function PaperReader({
     setAddStatus({});
   }
 
+  function saveFullText() {
+    const text = fullTextDraft.trim();
+    onUpdatePaper({ fullText: text ? text.slice(0, 100000) : undefined });
+    setFullTextDraft(text.slice(0, 100000));
+    setEditingFullText(false);
+  }
+
   const encoded = encodeURIComponent(selection);
   const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(`${selection} 意思`)}`;
   const scholarUrl = `https://www.semanticscholar.org/search?q=${encoded}`;
@@ -268,7 +282,6 @@ export function PaperReader({
             </span>
           </div>
           <div
-            ref={contentRef}
             data-reader-text
             className="mt-3 whitespace-pre-wrap text-[15px] leading-8 text-ink-soft selection:bg-accent-soft"
           >
@@ -277,7 +290,7 @@ export function PaperReader({
           </div>
 
           {paper.interpretation ? (
-            <div className="mt-4 rounded-2xl bg-accent-soft/60 px-4 py-3">
+            <div className="mt-4 rounded-2xl bg-accent-soft/60 px-4 py-3" data-reader-text>
               <p className="text-[10.5px] font-medium tracking-wide text-accent-deep">
                 三句话解读
               </p>
@@ -286,6 +299,82 @@ export function PaperReader({
               </p>
             </div>
           ) : null}
+        </section>
+
+        <section className="mt-4 card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-semibold">全文</h2>
+              <p className="mt-0.5 text-[10.5px] leading-relaxed text-ink-faint">
+                可选：把 PDF 或网页正文粘进来，在站内大字号阅读、划词。只保存在本机。
+              </p>
+            </div>
+            {paper.fullText && !editingFullText ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setFullTextDraft(paper.fullText ?? '');
+                  setEditingFullText(true);
+                }}
+                className="shrink-0 rounded-full border border-line px-2.5 py-1 text-[10.5px] text-ink-soft transition hover:border-ink-faint/60 hover:text-ink"
+              >
+                编辑
+              </button>
+            ) : null}
+          </div>
+
+          {editingFullText ? (
+            <>
+              <textarea
+                value={fullTextDraft}
+                onChange={(event) => setFullTextDraft(event.target.value)}
+                rows={10}
+                maxLength={100000}
+                placeholder="从 PDF 或网页复制正文，粘贴到这里…"
+                className="mt-3 w-full resize-y rounded-2xl border border-line bg-paper/40 px-3.5 py-3 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-white focus:ring-4 focus:ring-ink/5"
+              />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[10px] text-ink-faint">
+                  {fullTextDraft.length} / 100000 · 只保存在本机
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingFullText(false)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveFullText}
+                    className="btn btn-primary btn-sm"
+                  >
+                    保存全文
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : paper.fullText ? (
+            <div
+              data-reader-text
+              className="mt-3 whitespace-pre-wrap text-[15px] leading-8 text-ink-soft selection:bg-accent-soft"
+            >
+              {paper.fullText}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setFullTextDraft('');
+                setEditingFullText(true);
+              }}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-line py-3 text-[12px] text-ink-faint transition hover:border-ink-faint hover:text-ink-soft"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              粘贴全文，在站内继续阅读
+            </button>
+          )}
         </section>
 
         <section className="mt-4 card p-5">

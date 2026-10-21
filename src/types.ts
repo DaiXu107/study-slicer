@@ -47,6 +47,8 @@ export interface Paper {
   manual?: boolean;
   /** 是否是用户在向导里勾选的核心文献 */
   selected?: boolean;
+  /** 用户粘贴进阅读器的全文，只存本机 */
+  fullText?: string;
 }
 
 export interface Direction {
