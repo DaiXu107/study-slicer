@@ -1,0 +1,102 @@
+export type Stage =
+  | '文献综述'
+  | '理论框架'
+  | '方法论设计'
+  | '数据收集'
+  | '分析'
+  | '写作';
+
+export const STAGES: Stage[] = [
+  '文献综述',
+  '理论框架',
+  '方法论设计',
+  '数据收集',
+  '分析',
+  '写作',
+];
+
+export type Feasibility = '高' | '中' | '低';
+
+export interface Paper {
+  id: string;
+  title: string;
+  abstract: string;
+  authors: string[];
+  year: number | null;
+  url: string;
+  citedByCount: number;
+  /** AI 或用户写下的三句话解读 */
+  interpretation?: string;
+  /** 阅读笔记 */
+  note?: string;
+  /** 是否是用户手动录入 */
+  manual?: boolean;
+  /** 是否是用户在向导里勾选的核心文献 */
+  selected?: boolean;
+}
+
+export interface Direction {
+  id: string;
+  title: string;
+  description: string;
+  feasibility: Feasibility;
+  selected: boolean;
+}
+
+export interface DailyTask {
+  id: string;
+  /** YYYY-MM-DD（本地时区） */
+  date: string;
+  title: string;
+  description: string;
+  /** 完成标准，一句话说清“做到什么算完成” */
+  criteria: string;
+  /** 预计分钟数，建议 ≤ 45 */
+  minutes?: number;
+  linkedDirectionId?: string;
+  done: boolean;
+  /** ISO 时间戳 */
+  completedAt?: string;
+  note: string;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  stage: Stage;
+  keywords?: string;
+  createdAt: string;
+  papers: Paper[];
+  directions: Direction[];
+  dailyTasks: DailyTask[];
+}
+
+export interface Settings {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+export interface PersistedState {
+  projects: Project[];
+  settings: Settings;
+  activeProjectId: string | null;
+}
+
+export interface WizardDraft {
+  step: number;
+  title: string;
+  stage: Stage | '';
+  keywords: string;
+  query: string;
+  results: Paper[];
+  selectedIds: string[];
+  directions: Direction[];
+  tasks: DailyTask[];
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  baseUrl: 'https://api.openai.com/v1',
+  apiKey: '',
+  model: 'gpt-4o-mini',
+};

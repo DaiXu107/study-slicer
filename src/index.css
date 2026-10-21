@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    background-image: radial-gradient(
+      1100px 560px at 50% -10%,
+      rgba(255, 255, 255, 0.95),
+      rgba(248, 246, 241, 0) 72%
+    );
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: #f3d9c6;
+    color: #1c2b3a;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  input[type='date'] {
+    min-height: 2.5rem;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-full px-5 py-3 text-[14.5px] font-medium transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply bg-ink text-paper shadow-card hover:bg-[#26384c];
+  }
+
+  .btn-secondary {
+    @apply border border-line bg-white text-ink hover:border-ink-faint/60;
+  }
+
+  .btn-ghost {
+    @apply text-ink-soft hover:bg-ink/5 hover:text-ink;
+  }
+
+  .btn-sm {
+    @apply px-3.5 py-2 text-[13px];
+  }
+
+  .btn-danger {
+    @apply border border-line bg-white text-ink-soft hover:border-accent/50 hover:text-accent-deep;
+  }
+
+  .field {
+    @apply w-full rounded-2xl border border-line bg-white px-4 py-3 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-faint/70 focus:border-ink-faint/70 focus:ring-4 focus:ring-ink/5;
+  }
+
+  .field-sm {
+    @apply rounded-xl px-3 py-2 text-[13.5px];
+  }
+
+  .label {
+    @apply mb-2 block text-[12.5px] font-medium tracking-wide text-ink-soft;
+  }
+
+  .hint {
+    @apply mt-2 text-[12px] leading-relaxed text-ink-faint;
+  }
+
+  .card {
+    @apply rounded-3xl border border-line bg-white shadow-card;
+  }
+
+  .eyebrow {
+    @apply text-[11.5px] font-medium uppercase tracking-[0.14em] text-ink-faint;
+  }
+
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-[12.5px] text-ink-soft transition-colors;
+  }
+
+  .chip-active {
+    @apply border-ink bg-ink text-paper;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(680deg);
+    opacity: 0;
+  }
+}
+
+/* 尊重系统的“减少动态效果”设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
