@@ -4,6 +4,12 @@
 
 纯前端单页应用：React + TypeScript + Tailwind CSS + Vite。没有账号、没有后端，所有课题、任务、笔记和设置都存在浏览器的 localStorage 里。
 
+## 在线使用
+
+👉 **https://daixu107.github.io/study-slicer/**
+
+无需安装、无需登录。数据只存在你自己的浏览器里。
+
 ## 快速开始
 
 ```bash
