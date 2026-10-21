@@ -190,6 +190,26 @@ export function UploadIcon({ className }: IconProps) {
   );
 }
 
+export function FolderIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h3.2l2 2H18a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5v-9Z" />
+      <path d="M3.8 9.5h16.4" />
+    </svg>
+  );
+}
+
+export function StarIcon({
+  className,
+  filled = false,
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base(className)} fill={filled ? 'currentColor' : 'none'}>
+      <path d="m12 3.5 2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 17.02l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86L12 3.5Z" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>

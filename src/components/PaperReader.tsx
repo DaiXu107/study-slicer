@@ -3,15 +3,15 @@ import { createPortal } from 'react-dom';
 import type { Paper } from '../types';
 import { chatComplete } from '../lib/llm';
 import { searchWorks } from '../lib/openalex';
-import { pluralAuthors, truncate } from '../lib/utils';
+import { cx, pluralAuthors, truncate } from '../lib/utils';
 import { useApp } from '../store/AppContext';
 import {
   ArrowLeftIcon,
   BookIcon,
-  CheckIcon,
   ExternalLinkIcon,
   PlusIcon,
   SearchIcon,
+  StarIcon,
   XIcon,
 } from './Icons';
 
@@ -239,12 +239,54 @@ export function PaperReader({
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {paper.selected ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-moss-soft px-2.5 py-1 text-[10px] font-medium text-moss-deep">
-              <CheckIcon className="h-3 w-3" />
-              核心文献
-            </span>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => onUpdatePaper({ selected: !paper.selected })}
+            aria-pressed={Boolean(paper.selected)}
+            className={cx(
+              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] transition',
+              paper.selected
+                ? 'border-sun/40 bg-sun/15 text-accent-deep'
+                : 'border-line bg-surface text-ink-faint hover:text-ink-soft'
+            )}
+          >
+            <StarIcon
+              filled={Boolean(paper.selected)}
+              className={cx('h-3 w-3', paper.selected && 'text-sun')}
+            />
+            {paper.selected ? '核心文献' : '设为核心'}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onUpdatePaper({
+                read: !paper.read,
+                readAt: !paper.read ? new Date().toISOString() : undefined,
+              })
+            }
+            aria-pressed={Boolean(paper.read)}
+            title="点击切换阅读状态"
+            className={cx(
+              'rounded-full border px-2.5 py-1 text-[10px] transition',
+              paper.read
+                ? 'border-moss/30 bg-moss-soft text-moss-deep'
+                : 'border-line bg-surface text-ink-faint hover:text-ink-soft'
+            )}
+          >
+            {paper.read ? '已读' : '未读'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdatePaper({ irrelevant: !paper.irrelevant })}
+            className={cx(
+              'rounded-full border px-2.5 py-1 text-[10px] transition',
+              paper.irrelevant
+                ? 'border-accent/30 bg-accent-soft text-accent-deep'
+                : 'border-line bg-surface text-ink-faint hover:text-ink-soft'
+            )}
+          >
+            {paper.irrelevant ? '不相关' : '标记不相关'}
+          </button>
           {paper.doi ? (
             <span className="rounded-full bg-surface px-2.5 py-1 text-[10px] text-ink-faint">
               DOI {paper.doi}

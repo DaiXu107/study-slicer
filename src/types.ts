@@ -45,8 +45,13 @@ export interface Paper {
   note?: string;
   /** 是否是用户手动录入 */
   manual?: boolean;
-  /** 是否是用户在向导里勾选的核心文献 */
+  /** 是否是用户在向导里勾选 / 星标的核心文献 */
   selected?: boolean;
+  /** 是否已经打开阅读过 */
+  read?: boolean;
+  readAt?: string;
+  /** 阅读后标记为不相关 */
+  irrelevant?: boolean;
   /** 用户粘贴进阅读器的全文，只存本机 */
   fullText?: string;
 }

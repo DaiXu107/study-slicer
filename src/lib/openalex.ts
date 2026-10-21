@@ -81,7 +81,7 @@ function toPaper(work: OpenAlexWork): Paper {
 export async function searchWorks(
   query: string,
   perPage = 10,
-  options: { sort?: 'cited' | 'relevance' } = {}
+  options: { sort?: 'cited' | 'relevance'; page?: number } = {}
 ): Promise<Paper[]> {
   const q = query.trim();
   if (!q) throw new Error('请先输入检索关键词');
@@ -94,6 +94,9 @@ export async function searchWorks(
   });
   if (options.sort !== 'relevance') {
     params.set('sort', 'cited_by_count:desc');
+  }
+  if (options.page && options.page > 1) {
+    params.set('page', String(options.page));
   }
 
   const controller = new AbortController();
