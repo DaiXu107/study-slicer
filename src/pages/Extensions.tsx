@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -7,7 +7,15 @@ import {
   TrashIcon,
   UploadIcon,
 } from '../components/Icons';
-import { parseThemePack, themeTemplateJSON, type ThemePack } from '../lib/themes';
+import {
+  applyTheme,
+  deriveThemeTokens,
+  isDarkHex,
+  parseThemePack,
+  themeTemplateJSON,
+  type ThemeBaseColors,
+  type ThemePack,
+} from '../lib/themes';
 import { cx } from '../lib/utils';
 import { useTheme } from '../store/ThemeContext';
 
@@ -139,6 +147,168 @@ function ThemeCard({
   );
 }
 
+const BASE_FIELDS: Array<{
+  key: keyof ThemeBaseColors;
+  label: string;
+  hint: string;
+}> = [
+  { key: 'paper', label: '底色', hint: '页面背景' },
+  { key: 'surface', label: '卡片', hint: '卡片 / 输入框' },
+  { key: 'ink', label: '文字', hint: '主文字' },
+  { key: 'accent', label: '强调', hint: '链接 / 提示' },
+  { key: 'moss', label: '完成', hint: '完成状态' },
+  { key: 'sun', label: '点缀', hint: '星标 / 高亮' },
+];
+
+function baseFromTheme(theme: ThemePack): ThemeBaseColors {
+  return {
+    paper: theme.tokens.paper,
+    surface: theme.tokens.surface,
+    ink: theme.tokens.ink,
+    accent: theme.tokens.accent,
+    moss: theme.tokens.moss,
+    sun: theme.tokens.sun,
+  };
+}
+
+function PaletteStudio() {
+  const { activeTheme, customThemes, installTheme } = useTheme();
+  const [name, setName] = useState('我的配色');
+  const [base, setBase] = useState<ThemeBaseColors>(() => baseFromTheme(activeTheme));
+  const [previewing, setPreviewing] = useState(false);
+  const [status, setStatus] = useState<Status>(null);
+
+  const tokens = useMemo(() => deriveThemeTokens(base), [base]);
+  const draft = useMemo<ThemePack>(
+    () => ({
+      schema: 'study-slicer-plugin',
+      version: 1,
+      type: 'theme',
+      id: 'palette-draft',
+      name: name.trim() || '我的配色',
+      description: '用调色板自己配的主题。',
+      author: '我',
+      colorScheme: isDarkHex(base.paper) ? 'dark' : 'light',
+      tokens,
+      builtIn: false,
+    }),
+    [name, base, tokens]
+  );
+
+  useEffect(() => {
+    if (!previewing) return;
+    applyTheme(draft);
+    return () => {
+      applyTheme(activeTheme);
+    };
+  }, [previewing, draft, activeTheme]);
+
+  function save() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setStatus({ tone: 'error', text: '先给这套配色起个名字。' });
+      return;
+    }
+    const existing = customThemes.find((theme) => theme.name === trimmed);
+    const id = existing?.id ?? `my-${Date.now().toString(36)}`;
+    installTheme({ ...draft, id, name: trimmed });
+    setPreviewing(false);
+    setStatus({ tone: 'ok', text: `已保存并应用「${trimmed}」，它只存在这个浏览器里。` });
+  }
+
+  return (
+    <section className="card mt-4 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[16px] font-semibold">自己配色</h2>
+          <p className="mt-1 text-[11.5px] leading-relaxed text-ink-faint">
+            只选 6 个基准色，其余深浅色自动推导。可以边调边预览。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setBase(baseFromTheme(activeTheme));
+            setStatus({ tone: 'info', text: '已取回当前主题的颜色。' });
+          }}
+          className="btn btn-ghost btn-sm shrink-0"
+        >
+          取当前主题
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {BASE_FIELDS.map((field) => (
+          <label
+            key={field.key}
+            className="flex items-center gap-2 rounded-2xl border border-line bg-paper/50 px-2.5 py-2"
+          >
+            <span
+              className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-black/10 shadow-inner"
+              style={{ backgroundColor: base[field.key] }}
+            >
+              <input
+                type="color"
+                value={base[field.key]}
+                onChange={(event) =>
+                  setBase((previous) => ({ ...previous, [field.key]: event.target.value }))
+                }
+                aria-label={`${field.label}颜色`}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[11.5px] font-medium text-ink">
+                {field.label}
+              </span>
+              <span className="block truncate text-[9.5px] uppercase text-ink-faint">
+                {base[field.key]}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="主题名称"
+          aria-label="主题名称"
+          maxLength={40}
+          className="field w-auto min-w-[10rem] flex-1"
+        />
+        <button
+          type="button"
+          onClick={() => setPreviewing((value) => !value)}
+          className={cx('btn btn-sm', previewing ? 'btn-secondary' : 'btn-ghost')}
+        >
+          {previewing ? '停止预览' : '预览'}
+        </button>
+        <button type="button" onClick={save} className="btn btn-primary btn-sm">
+          保存并应用
+        </button>
+      </div>
+
+      {status ? (
+        <p
+          role="status"
+          className={cx(
+            'mt-2 text-[11px] leading-relaxed',
+            status.tone === 'error' ? 'text-accent-deep' : 'text-moss-deep'
+          )}
+        >
+          {status.text}
+        </p>
+      ) : null}
+
+      <p className="mt-2 text-[10.5px] leading-relaxed text-ink-faint">
+        底色偏暗时会自动切成深色主题。文字与底色的对比度需要自己把握；保存后可以像其他主题一样删除。
+      </p>
+    </section>
+  );
+}
+
 export function Extensions() {
   const {
     themes,
@@ -209,7 +379,7 @@ export function Extensions() {
         外观与扩展
       </h1>
       <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">
-        换一套配色，或者导入别人做的主题。扩展只在本机生效，不执行脚本。
+        换一套内置配色，自己调 6 个颜色，或者导入别人做的主题。只在本机生效，不执行脚本。
       </p>
 
       <section className="card mt-7 p-5">
@@ -285,6 +455,8 @@ export function Extensions() {
           自定义主题 id：{customThemes.length ? customThemes.map((t) => t.id).join('、') : '还没有'}
         </p>
       </section>
+
+      <PaletteStudio />
 
       <section className="card mt-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">

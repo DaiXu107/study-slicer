@@ -1,7 +1,7 @@
 {
   "name": "study-slicer",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "把 PhD / 硕士课题拆成每日 45 分钟小任务的本地优先学习工具",
   "author": "DaiXu107",
   "license": "MIT",

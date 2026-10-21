@@ -87,6 +87,90 @@ export const BUILT_IN_THEMES: ThemePack[] = [
     schema: 'study-slicer-plugin',
     version: 1,
     type: 'theme',
+    id: 'ocean',
+    name: '雾蓝',
+    description: '莫兰迪蓝：雾灰底色 + 低饱和蓝，安静、不刺眼。',
+    author: 'Study Slicer',
+    colorScheme: 'light',
+    builtIn: true,
+    tokens: {
+      paper: '#e4e9ed',
+      surface: '#f6f9fb',
+      done: '#d9e2e8',
+      ink: '#2b3742',
+      inkSoft: '#5b6975',
+      inkFaint: '#8b98a3',
+      line: '#ced9e0',
+      accent: '#7891a6',
+      accentSoft: '#e2e9ef',
+      accentDeep: '#4c6378',
+      moss: '#78968c',
+      mossSoft: '#e2ece8',
+      mossDeep: '#4e6a61',
+      sun: '#c0a878',
+      glow: '#f6f9fb',
+    },
+  },
+  {
+    schema: 'study-slicer-plugin',
+    version: 1,
+    type: 'theme',
+    id: 'forest',
+    name: '苔绿',
+    description: '莫兰迪绿：苔藓灰绿配一点陶土色，适合长时间写作。',
+    author: 'Study Slicer',
+    colorScheme: 'light',
+    builtIn: true,
+    tokens: {
+      paper: '#e8ebe1',
+      surface: '#f7f9f2',
+      done: '#dde5d6',
+      ink: '#2f3b32',
+      inkSoft: '#5c6a5e',
+      inkFaint: '#8b988c',
+      line: '#d3dccb',
+      accent: '#9a7b5f',
+      accentSoft: '#efe4d9',
+      accentDeep: '#74573f',
+      moss: '#78956f',
+      mossSoft: '#e6eedf',
+      mossDeep: '#4f6a47',
+      sun: '#c3a878',
+      glow: '#f7f9f2',
+    },
+  },
+  {
+    schema: 'study-slicer-plugin',
+    version: 1,
+    type: 'theme',
+    id: 'lotus',
+    name: '藕粉',
+    description: '莫兰迪粉：藕荷底色 + 灰粉强调，柔和但不甜腻。',
+    author: 'Study Slicer',
+    colorScheme: 'light',
+    builtIn: true,
+    tokens: {
+      paper: '#f1e2e1',
+      surface: '#fdf7f6',
+      done: '#ecdcdb',
+      ink: '#3b2e30',
+      inkSoft: '#6b5b5d',
+      inkFaint: '#99898b',
+      line: '#e2d2d1',
+      accent: '#b07f86',
+      accentSoft: '#f5e3e4',
+      accentDeep: '#875860',
+      moss: '#8b9c84',
+      mossSoft: '#e9eee3',
+      mossDeep: '#617359',
+      sun: '#cbaa7e',
+      glow: '#fdf7f6',
+    },
+  },
+  {
+    schema: 'study-slicer-plugin',
+    version: 1,
+    type: 'theme',
     id: 'midnight',
     name: '午夜',
     description: '低亮度深色主题，适合夜间阅读与打卡。',
@@ -111,62 +195,6 @@ export const BUILT_IN_THEMES: ThemePack[] = [
       glow: '#22303c',
     },
   },
-  {
-    schema: 'study-slicer-plugin',
-    version: 1,
-    type: 'theme',
-    id: 'ocean',
-    name: '海盐',
-    description: '清爽的蓝绿色调，长时间阅读更安静。',
-    author: 'Study Slicer',
-    colorScheme: 'light',
-    builtIn: true,
-    tokens: {
-      paper: '#f2f7f8',
-      surface: '#ffffff',
-      done: '#edf6f4',
-      ink: '#16323a',
-      inkSoft: '#4a6570',
-      inkFaint: '#869ca5',
-      line: '#d9e7ea',
-      accent: '#2f8f9d',
-      accentSoft: '#e1f2f4',
-      accentDeep: '#1e6670',
-      moss: '#6f9b78',
-      mossSoft: '#edf4ee',
-      mossDeep: '#527a5b',
-      sun: '#e8b95e',
-      glow: '#ffffff',
-    },
-  },
-  {
-    schema: 'study-slicer-plugin',
-    version: 1,
-    type: 'theme',
-    id: 'forest',
-    name: '森野',
-    description: '柔和的草木底色，适合长时间写作。',
-    author: 'Study Slicer',
-    colorScheme: 'light',
-    builtIn: true,
-    tokens: {
-      paper: '#f4f6ef',
-      surface: '#ffffff',
-      done: '#eef3e8',
-      ink: '#243326',
-      inkSoft: '#566456',
-      inkFaint: '#8c978a',
-      line: '#dfe5d6',
-      accent: '#b06b3c',
-      accentSoft: '#f6e9dd',
-      accentDeep: '#8f5128',
-      moss: '#5f8c68',
-      mossSoft: '#e8f0e5',
-      mossDeep: '#436a4b',
-      sun: '#dcb75e',
-      glow: '#ffffff',
-    },
-  },
 ];
 
 export const BUILT_IN_THEME_IDS = new Set(BUILT_IN_THEMES.map((theme) => theme.id));
@@ -187,6 +215,66 @@ function isHex(value: unknown): value is string {
 export function hexToRgbTriplet(hex: string): string {
   const value = parseInt(hex.slice(1), 16);
   return `${(value >> 16) & 255} ${(value >> 8) & 255} ${value & 255}`;
+}
+
+function hexToChannels(hex: string): [number, number, number] {
+  const value = parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function channelsToHex(channels: [number, number, number]): string {
+  return `#${channels
+    .map((channel) => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+/** weightA 是 a 所占比例（0–1）。 */
+export function mixHex(a: string, b: string, weightA: number): string {
+  const weight = Math.max(0, Math.min(1, weightA));
+  const ca = hexToChannels(a);
+  const cb = hexToChannels(b);
+  return channelsToHex([
+    ca[0] * weight + cb[0] * (1 - weight),
+    ca[1] * weight + cb[1] * (1 - weight),
+    ca[2] * weight + cb[2] * (1 - weight),
+  ]);
+}
+
+export function isDarkHex(hex: string): boolean {
+  const [r, g, b] = hexToChannels(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.45;
+}
+
+export interface ThemeBaseColors {
+  paper: string;
+  surface: string;
+  ink: string;
+  accent: string;
+  moss: string;
+  sun: string;
+}
+
+/** 只选 6 个基准色，其余 9 个 token 自动推导。 */
+export function deriveThemeTokens(base: ThemeBaseColors): ThemeTokens {
+  const dark = isDarkHex(base.paper);
+  const anchor = dark ? '#ffffff' : '#000000';
+  return {
+    paper: base.paper,
+    surface: base.surface,
+    done: mixHex(base.moss, base.paper, dark ? 0.16 : 0.07),
+    ink: base.ink,
+    inkSoft: mixHex(base.ink, base.paper, 0.62),
+    inkFaint: mixHex(base.ink, base.paper, 0.42),
+    line: mixHex(base.ink, base.paper, dark ? 0.2 : 0.13),
+    accent: base.accent,
+    accentSoft: mixHex(base.accent, base.surface, dark ? 0.22 : 0.13),
+    accentDeep: mixHex(base.accent, anchor, 0.8),
+    moss: base.moss,
+    mossSoft: mixHex(base.moss, base.surface, dark ? 0.22 : 0.14),
+    mossDeep: mixHex(base.moss, anchor, 0.8),
+    sun: base.sun,
+    glow: base.surface,
+  };
 }
 
 export interface ThemeParseResult {

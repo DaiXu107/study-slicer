@@ -41,39 +41,39 @@ export function LibraryPaperCard({
         paper.irrelevant ? 'border-line/60' : 'border-line'
       )}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="-mt-2 mb-0.5 flex items-start justify-between gap-2">
         <button
           type="button"
           onClick={onDelete}
           aria-label={`从文献库移除：${paper.title}`}
-          className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-transparent text-ink-faint/70 transition hover:border-accent/40 hover:bg-accent-soft hover:text-accent-deep"
+          className="-ml-1.5 grid h-7 w-7 place-items-center rounded-full border border-transparent text-ink-faint/70 transition hover:border-accent/40 hover:bg-accent-soft hover:text-accent-deep"
         >
           <XIcon className="h-3 w-3" />
         </button>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-1">
-            <h3 className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-ink">
-              {paper.title}
-            </h3>
-            <button
-              type="button"
-              onClick={onToggleStar}
-              aria-pressed={Boolean(paper.selected)}
-              aria-label={paper.selected ? '取消核心文献' : '设为核心文献'}
-              title={paper.selected ? '取消核心文献' : '设为核心文献'}
-              className={cx(
-                'grid h-8 w-8 shrink-0 place-items-center rounded-full transition',
-                paper.selected
-                  ? 'text-sun hover:bg-sun/10'
-                  : 'text-ink-faint/70 hover:bg-ink/5 hover:text-ink-soft'
-              )}
-            >
-              <StarIcon filled={Boolean(paper.selected)} className="h-[17px] w-[17px]" />
-            </button>
-          </div>
+        <button
+          type="button"
+          onClick={onToggleStar}
+          aria-pressed={Boolean(paper.selected)}
+          aria-label={paper.selected ? '取消核心文献' : '设为核心文献'}
+          title={paper.selected ? '取消核心文献' : '设为核心文献'}
+          className={cx(
+            '-mr-1.5 grid h-7 w-7 place-items-center rounded-full transition',
+            paper.selected
+              ? 'text-sun hover:bg-sun/10'
+              : 'text-ink-faint/70 hover:bg-ink/5 hover:text-ink-soft'
+          )}
+        >
+          <StarIcon filled={Boolean(paper.selected)} className="h-4 w-4" />
+        </button>
+      </div>
 
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+      <div>
+        <h3 className="text-[15px] font-semibold leading-snug text-ink">
+          {paper.title}
+        </h3>
+
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
             <span>{pluralAuthors(paper.authors)}</span>
             <span>·</span>
             <span>{paper.year ?? '年份未知'}</span>
@@ -189,7 +189,6 @@ export function LibraryPaperCard({
             placeholder="它和我的课题有什么关系？"
             className="mt-1.5 w-full resize-y rounded-2xl border border-line/80 bg-paper/50 px-3 py-2.5 text-[12.5px] leading-relaxed text-ink outline-none transition placeholder:text-ink-faint/70 focus:border-ink-faint/60 focus:bg-surface focus:ring-4 focus:ring-ink/5"
           />
-        </div>
       </div>
     </article>
   );
