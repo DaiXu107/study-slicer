@@ -3,6 +3,7 @@
 > 把 PhD / 硕士课题切成「今天 45 分钟内能做完的一小块」。
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-online-1c2b3a?style=flat-square)](https://daixu107.github.io/study-slicer/)
+[![Windows](https://img.shields.io/badge/Windows-下载安装包-1c2b3a?style=flat-square&logo=windows)](https://github.com/DaiXu107/study-slicer/releases/latest)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=0b1f2a)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -10,7 +11,9 @@
 
 **在线使用** 👉 https://daixu107.github.io/study-slicer/
 
-无需安装、无需登录。课题、任务、文献、笔记全部存在你自己的浏览器里。
+**Windows 桌面版** 👉 [下载安装包](https://github.com/DaiXu107/study-slicer/releases/latest)（免安装账号，双击安装即可）
+
+无需注册、无需登录。课题、任务、文献、笔记全部存在你自己的设备上。
 
 ---
 
@@ -276,6 +279,7 @@
 - 粘贴的全文、笔记、任务始终只在本机。
 - 清理浏览器数据或换设备会丢失内容；重要笔记请自行备份。
 - API Key 存在浏览器本地，不要在共享设备上填写。
+- Windows 桌面版的数据在 Electron 用户目录（`%APPDATA%\Study Slicer`），与浏览器版互不相通；卸载默认保留数据。
 
 ## 关于 OpenAlex
 
@@ -348,6 +352,15 @@ study-slicer/
 │   └── store/
 │       ├── AppContext.tsx      # localStorage 状态与增删改
 │       └── ThemeContext.tsx    # 主题应用与自定义主题管理
+├── electron/
+│   ├── main.cjs                # Electron 主进程：窗口、外链、单实例
+│   └── renderer/               # 构建生成的单文件页面（不提交）
+├── scripts/
+│   └── build-electron.mjs      # 把 dist 内联成 Electron 可加载的单文件
+├── build/
+│   └── icon.ico                # 安装包 / 应用图标
+├── public/
+│   └── favicon.png             # 网页图标
 ├── docs/
 │   └── PLUGINS.md              # 主题 / 语言包扩展格式
 ├── plugins/
@@ -356,6 +369,32 @@ study-slicer/
 ├── vite.config.ts
 └── tsconfig.json
 ```
+
+## Windows 桌面版
+
+不想开浏览器的话，可以下载安装包：
+
+1. 打开 [Releases](https://github.com/DaiXu107/study-slicer/releases/latest)，下载 `StudySlicer-Setup-<version>.exe`。
+2. 双击安装。默认装到当前用户目录，**不需要管理员权限**，安装时可以自选位置。
+3. 从桌面或开始菜单打开，数据、主题、笔记都在本机。
+
+桌面版特点：
+
+- 页面和脚本打包在应用内，**断网也能打开、打卡、写笔记**；只有 OpenAlex 检索和 LLM 调用需要联网。
+- 文献原文、GitHub 等外链自动用系统浏览器打开，应用窗口不会被导航走。
+- 数据保存在 Electron 用户目录（Windows 下通常是 `%APPDATA%\Study Slicer`），和浏览器版的 localStorage **相互独立**。
+- 卸载不会删除数据；想彻底清空，卸载后手动删除上面的目录。
+- 安装包没有代码签名，Windows SmartScreen 可能提示「未知发布者」，点「更多信息 → 仍要运行」即可。
+- 当前只提供 **Windows x64** 安装包；macOS / Linux 需要用对应平台自行构建。
+
+自己构建桌面版：
+
+```bash
+bun install
+bun run electron:build
+```
+
+产物在 `release/StudySlicer-Setup-<version>.exe`。首次构建会下载 Electron 运行时（约 100 MB）。
 
 ## 本地开发
 
@@ -399,6 +438,7 @@ npm run preview     # 本地预览生产构建
 - 主题只覆盖 15 个颜色 token，暂不支持布局、字体、圆角或背景纹理。
 - 自己配色只开放 6 个基准色，其余 token 自动推导；底色偏暗时会自动切换为深色主题。
 - 自定义主题只存在当前浏览器；换设备需要重新导入 JSON。
+- Windows 安装包未做代码签名，可能触发 SmartScreen；桌面版暂不支持自动更新，也暂不提供 macOS / Linux 安装包。
 
 ## 后续计划
 

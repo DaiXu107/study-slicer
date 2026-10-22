@@ -21,11 +21,15 @@
     "openalex"
   ],
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:renderer": "bun scripts/build-electron.mjs",
+    "electron:dev": "bun run build && bun run electron:renderer && electron .",
+    "electron:build": "bun run build && bun run electron:renderer && electron-builder --win nsis"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -37,9 +41,50 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
     "vite": "^5.4.8"
+  },
+  "build": {
+    "appId": "com.daixu107.studyslicer",
+    "productName": "Study Slicer",
+    "copyright": "Copyright © 2026 DaiXu107",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "StudySlicer-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Study Slicer",
+      "uninstallDisplayName": "Study Slicer ${version}",
+      "deleteAppDataOnUninstall": false
+    }
   }
 }
