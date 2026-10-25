@@ -1,3 +1,5 @@
+import { applyThemeArt } from './themeArt';
+
 export const THEME_TOKEN_KEYS = [
   'paper',
   'surface',
@@ -61,7 +63,7 @@ export const BUILT_IN_THEMES: ThemePack[] = [
     type: 'theme',
     id: 'paper',
     name: '纸感',
-    description: '默认主题：暖纸底色、深蓝文字与一点暖橙。',
+    description: '默认主题：暖纸底色、纸张纤维纹理、深蓝文字与一点暖橙。',
     author: 'Study Slicer',
     colorScheme: 'light',
     builtIn: true,
@@ -173,7 +175,7 @@ export const BUILT_IN_THEMES: ThemePack[] = [
     type: 'theme',
     id: 'midnight',
     name: '午夜',
-    description: '低亮度深色主题，适合夜间阅读与打卡。',
+    description: '低亮度深色主题，带流星划过动画，适合夜间阅读与打卡。',
     author: 'Study Slicer',
     colorScheme: 'dark',
     builtIn: true,
@@ -345,6 +347,7 @@ export function parseThemePack(raw: unknown): ThemeParseResult {
 export function applyTheme(theme: ThemePack): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  applyThemeArt(root);
   for (const key of THEME_TOKEN_KEYS) {
     root.style.setProperty(THEME_VARS[key], hexToRgbTriplet(theme.tokens[key]));
   }
