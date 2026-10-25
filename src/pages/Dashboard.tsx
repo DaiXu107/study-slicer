@@ -93,8 +93,6 @@ export function Dashboard() {
   const rolledToday = todays.filter((entry) =>
     isRolledOverToday(entry.task, today)
   );
-  const tasksLink =
-    effectiveScope === 'all' ? '/tasks' : `/tasks?project=${effectiveScope}`;
 
   function toggleTask(project: Project, task: DailyTask) {
     const next = !task.done;
@@ -278,20 +276,11 @@ export function Dashboard() {
       <section className="mt-8">
         <div className="mb-3 flex items-end justify-between">
           <h2 className="text-[19px] font-semibold tracking-tight">今日切片</h2>
-          <div className="flex items-center gap-3">
-            {todays.length ? (
-              <span className="text-[12px] text-ink-faint">
-                {doneToday} / {todays.length} 完成
-              </span>
-            ) : null}
-            <Link
-              to={tasksLink}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-ink-soft transition hover:text-ink"
-            >
-              全部任务
-              <ArrowRightIcon className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          {todays.length ? (
+            <span className="text-[12px] text-ink-faint">
+              {doneToday} / {todays.length} 完成
+            </span>
+          ) : null}
         </div>
 
         {rolledToday.length ? (
@@ -317,7 +306,7 @@ export function Dashboard() {
             compact
             icon={<SunIcon className="h-4 w-4" />}
             title="今天没有安排"
-            description="休息，或者去所有任务里，把某一块拖到今天。"
+            description="休息，或者去「项目」里打开全部任务，把某一块拖到今天。"
           />
         )}
 

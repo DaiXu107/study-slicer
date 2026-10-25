@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   CheckIcon,
+  ChevronRightIcon,
   DownloadIcon,
   TrashIcon,
   UploadIcon,
@@ -177,6 +178,7 @@ function PaletteStudio() {
   const [base, setBase] = useState<ThemeBaseColors>(() => baseFromTheme(activeTheme));
   const [previewing, setPreviewing] = useState(false);
   const [status, setStatus] = useState<Status>(null);
+  const [open, setOpen] = useState(false);
 
   const tokens = useMemo(() => deriveThemeTokens(base), [base]);
   const draft = useMemo<ThemePack>(
@@ -217,27 +219,60 @@ function PaletteStudio() {
   }
 
   return (
-    <section className="card mt-4 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+    <section className="card mt-4 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => {
+          if (open) setPreviewing(false);
+          setOpen((value) => !value);
+        }}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left transition hover:bg-paper/40"
+      >
+        <div>
           <h2 className="text-[16px] font-semibold">自己配色</h2>
           <p className="mt-1 text-[11.5px] leading-relaxed text-ink-faint">
-            只选 6 个基准色，其余深浅色自动推导。可以边调边预览。
+            只选 6 个基准色，其余深浅色自动推导。{open ? '可以边调边预览。' : '点开调整。'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setBase(baseFromTheme(activeTheme));
-            setStatus({ tone: 'info', text: '已取回当前主题的颜色。' });
-          }}
-          className="btn btn-ghost btn-sm shrink-0"
-        >
-          取当前主题
-        </button>
-      </div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1" aria-hidden>
+            {[base.paper, base.surface, base.ink, base.accent, base.moss].map((color, index) => (
+              <span
+                key={`${color}-${index}`}
+                className="h-4 w-4 rounded-full border border-black/10"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+          <span className="flex items-center gap-1 text-[11.5px] text-ink-soft">
+            {open ? '收起' : '展开'}
+            <ChevronRightIcon
+              className={cx('h-4 w-4 transition-transform', open && 'rotate-90')}
+            />
+          </span>
+        </div>
+      </button>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {open ? (
+        <div className="border-t border-line/60 px-5 pb-5 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[11.5px] leading-relaxed text-ink-faint">
+              从当前主题开始，或直接调 6 个基准色。
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setBase(baseFromTheme(activeTheme));
+                setStatus({ tone: 'info', text: '已取回当前主题的颜色。' });
+              }}
+              className="btn btn-ghost btn-sm shrink-0"
+            >
+              取当前主题
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {BASE_FIELDS.map((field) => (
           <label
             key={field.key}
@@ -302,9 +337,11 @@ function PaletteStudio() {
         </p>
       ) : null}
 
-      <p className="mt-2 text-[10.5px] leading-relaxed text-ink-faint">
-        底色偏暗时会自动切成深色主题。文字与底色的对比度需要自己把握；保存后可以像其他主题一样删除。
-      </p>
+          <p className="mt-2 text-[10.5px] leading-relaxed text-ink-faint">
+            底色偏暗时会自动切成深色主题。文字与底色的对比度需要自己把握；保存后可以像其他主题一样删除。
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -320,6 +357,7 @@ export function Extensions() {
   } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>(null);
+  const [themeOpen, setThemeOpen] = useState(false);
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -382,78 +420,117 @@ export function Extensions() {
         换一套内置配色，自己调 6 个颜色，或者导入别人做的主题。只在本机生效，不执行脚本。
       </p>
 
-      <section className="card mt-7 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className="card mt-7 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setThemeOpen((value) => !value)}
+          aria-expanded={themeOpen}
+          className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left transition hover:bg-paper/40"
+        >
           <div>
             <h2 className="text-[16px] font-semibold">主题</h2>
             <p className="mt-1 text-[11.5px] leading-relaxed text-ink-faint">
-              当前：{activeTheme.name}。主题只覆盖颜色 token，不改代码。
+              当前：{activeTheme.name}。{themeOpen ? '选择后立即生效。' : '点开切换、预览或导入主题包。'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="btn btn-secondary btn-sm"
-            >
-              <UploadIcon className="h-3.5 w-3.5" />
-              导入主题包
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                downloadText('study-slicer-theme-template.json', themeTemplateJSON())
-              }
-              className="btn btn-ghost btn-sm"
-            >
-              <DownloadIcon className="h-3.5 w-3.5" />
-              模板
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={(event) => void handleFile(event)}
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1" aria-hidden>
+              {[
+                activeTheme.tokens.paper,
+                activeTheme.tokens.surface,
+                activeTheme.tokens.ink,
+                activeTheme.tokens.accent,
+                activeTheme.tokens.moss,
+              ].map((color, index) => (
+                <span
+                  key={`${color}-${index}`}
+                  className="h-4 w-4 rounded-full border border-black/10"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+            <span className="flex items-center gap-1 text-[11.5px] text-ink-soft">
+              {themeOpen ? '收起' : '选择主题'}
+              <ChevronRightIcon
+                className={cx(
+                  'h-4 w-4 transition-transform',
+                  themeOpen && 'rotate-90'
+                )}
+              />
+            </span>
           </div>
-        </div>
+        </button>
 
-        {status ? (
-          <div
-            role="status"
-            className={cx(
-              'mt-4 rounded-2xl border px-3.5 py-3 text-[12px] leading-relaxed',
-              status.tone === 'ok' && 'border-moss/25 bg-moss-soft text-moss-deep',
-              status.tone === 'error' &&
-                'border-accent/25 bg-accent-soft text-accent-deep',
-              status.tone === 'info' && 'border-line bg-paper text-ink-soft'
-            )}
-          >
-            {status.text}
+        {themeOpen ? (
+          <div className="border-t border-line/60 px-5 pb-5 pt-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="max-w-md text-[11.5px] leading-relaxed text-ink-faint">
+                主题只覆盖颜色 token 和背景纹理，不改布局、不执行脚本。自定义主题只保存在本机。
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <UploadIcon className="h-3.5 w-3.5" />
+                  导入主题包
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadText('study-slicer-theme-template.json', themeTemplateJSON())
+                  }
+                  className="btn btn-ghost btn-sm"
+                >
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                  模板
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="sr-only"
+                  onChange={(event) => void handleFile(event)}
+                />
+              </div>
+            </div>
+
+            {status ? (
+              <div
+                role="status"
+                className={cx(
+                  'mt-4 rounded-2xl border px-3.5 py-3 text-[12px] leading-relaxed',
+                  status.tone === 'ok' && 'border-moss/25 bg-moss-soft text-moss-deep',
+                  status.tone === 'error' &&
+                    'border-accent/25 bg-accent-soft text-accent-deep',
+                  status.tone === 'info' && 'border-line bg-paper text-ink-soft'
+                )}
+              >
+                {status.text}
+              </div>
+            ) : null}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {themes.map((theme) => (
+                <ThemeCard
+                  key={theme.id}
+                  theme={theme}
+                  active={activeTheme.id === theme.id}
+                  onApply={() => {
+                    setActiveTheme(theme.id);
+                    setStatus({ tone: 'info', text: `已切换到「${theme.name}」。` });
+                  }}
+                  onRemove={theme.builtIn ? undefined : () => handleRemove(theme)}
+                />
+              ))}
+            </div>
+
+            <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
+              自定义主题 id：{customThemes.length ? customThemes.map((t) => t.id).join('、') : '还没有'}
+            </p>
           </div>
         ) : null}
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {themes.map((theme) => (
-            <ThemeCard
-              key={theme.id}
-              theme={theme}
-              active={activeTheme.id === theme.id}
-              onApply={() => {
-                setActiveTheme(theme.id);
-                setStatus({ tone: 'info', text: `已切换到「${theme.name}」。` });
-              }}
-              onRemove={
-                theme.builtIn ? undefined : () => handleRemove(theme)
-              }
-            />
-          ))}
-        </div>
-
-        <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
-          自定义主题 id：{customThemes.length ? customThemes.map((t) => t.id).join('、') : '还没有'}
-        </p>
       </section>
 
       <PaletteStudio />

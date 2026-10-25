@@ -19,6 +19,8 @@ export interface ExtractedPdf {
   pageCount: number;
   charCount: number;
   truncated: boolean;
+  /** 从正文前几页识别到的 DOI（可选） */
+  doi?: string;
 }
 
 interface TextItemLike {
@@ -113,6 +115,13 @@ function itemsToText(items: unknown[]): string {
   return normalizePageText(text);
 }
 
+/** 从正文前几页找 DOI，找不到就算了 */
+function findDoi(pages: string[]): string | undefined {
+  const text = pages.slice(0, 3).join('\n');
+  const match = text.match(/\b10\.\d{4,9}\/[-._;()/:A-Z0-9]+\b/i);
+  return match ? match[0].replace(/[.,;)\]]+$/, '') : undefined;
+}
+
 /** 把 PDF.js / 浏览器抛出的错误翻译成用户能看懂的一句话 */
 export function friendlyPdfError(error: unknown): string {
   const name =
@@ -199,7 +208,7 @@ export async function extractPdfText(
       if (truncated) break;
     }
 
-    return { title, authors, year, pages, pageCount, charCount, truncated };
+    return { title, authors, year, pages, pageCount, charCount, truncated, doi: findDoi(pages) };
   } catch (error) {
     throw new Error(friendlyPdfError(error));
   } finally {

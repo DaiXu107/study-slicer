@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Paper, Project } from '../types';
-import { createManualPaper } from '../lib/openalex';
+import { createManualPaper, lookupPaperByDoi, lookupPaperByTitle } from '../lib/openalex';
 import { parseBibliography } from '../lib/importers';
 import { MAX_PDF_BYTES, extractPdfText, type ExtractedPdf } from '../lib/pdf';
-import { cx, pluralAuthors, uid } from '../lib/utils';
+import { cx, normalizeDoi, pluralAuthors, uid } from '../lib/utils';
 import { useApp } from '../store/AppContext';
 import { CheckIcon, UploadIcon, XIcon } from './Icons';
 
@@ -68,6 +68,13 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfAuthors, setPdfAuthors] = useState('');
   const [pdfYear, setPdfYear] = useState('');
+  const [pdfJournal, setPdfJournal] = useState('');
+  const [pdfDoi, setPdfDoi] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfAbstract, setPdfAbstract] = useState('');
+  const [pdfCitedByCount, setPdfCitedByCount] = useState(0);
+  const [pdfLookupLoading, setPdfLookupLoading] = useState(false);
+  const [pdfLookupNote, setPdfLookupNote] = useState('');
 
   const targetProject = projects.find((project) => project.id === projectId) ?? projects[0];
 
@@ -129,6 +136,13 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
     setError('');
     setPdfResult(null);
     setPdfName(file.name);
+    setPdfLookupNote('');
+    setPdfLookupLoading(false);
+    setPdfJournal('');
+    setPdfDoi('');
+    setPdfUrl('');
+    setPdfAbstract('');
+    setPdfCitedByCount(0);
     if (file.size > MAX_PDF_BYTES) {
       setError('PDF 不能超过 50 MB。');
       return;
@@ -142,14 +156,71 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
     setPdfProgress({ page: 0, total: 0 });
     try {
       const result = await extractPdfText(file, (progress) => setPdfProgress(progress));
+      setPdfLoading(false);
       setPdfResult(result);
       setPdfTitle(result.title);
       setPdfAuthors(result.authors.join(', '));
       setPdfYear(result.year ? String(result.year) : '');
+      setPdfDoi(result.doi ?? '');
+      setPdfUrl(result.doi ? `https://doi.org/${result.doi}` : '');
+
       if (!result.charCount) {
         setError(
           '这个 PDF 没有提取到文字，可能是扫描件或图片型 PDF。可以先用 OCR 工具生成可搜索 PDF，再把文字导入。'
         );
+        return;
+      }
+
+      // 用标题去 OpenAlex 找同一条记录；只发送标题 / 作者 / 年份，不发送 PDF 正文。
+      setPdfLookupLoading(true);
+      try {
+        const timeout = Symbol('openalex-timeout');
+        const lookup = async () => {
+          if (result.doi) {
+            try {
+              const byDoi = await lookupPaperByDoi(result.doi);
+              if (byDoi) return byDoi;
+            } catch {
+              // DOI 查询失败时继续用标题兜底
+            }
+          }
+          return lookupPaperByTitle(result.title, result.authors, result.year);
+        };
+        const match = await Promise.race([
+          lookup(),
+          new Promise<typeof timeout>((resolve) =>
+            window.setTimeout(() => resolve(timeout), 8000)
+          ),
+        ]);
+        if (match === timeout) {
+          setPdfLookupNote('OpenAlex 匹配超时，可手动补充；不影响导入。');
+        } else if (match) {
+          setPdfTitle(match.title || result.title);
+          setPdfAuthors(
+            match.authors.length ? match.authors.join(', ') : result.authors.join(', ')
+          );
+          setPdfYear(
+            match.year ? String(match.year) : result.year ? String(result.year) : ''
+          );
+          setPdfJournal(match.journal ?? '');
+          setPdfDoi(match.doi ?? result.doi ?? '');
+          setPdfUrl(
+            match.url || (match.doi ? `https://doi.org/${match.doi}` : '')
+          );
+          setPdfAbstract(match.abstract ?? '');
+          setPdfCitedByCount(match.citedByCount || 0);
+          setPdfLookupNote(
+            `已从 OpenAlex 匹配：被引 ${match.citedByCount}${
+              match.journal ? ` · ${match.journal}` : ''
+            }`
+          );
+        } else {
+          setPdfLookupNote('OpenAlex 没有匹配到，可手动补充期刊 / DOI；不影响导入。');
+        }
+      } catch {
+        setPdfLookupNote('OpenAlex 暂时不可用，可手动补充；不影响导入。');
+      } finally {
+        setPdfLookupLoading(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'PDF 解析失败，请换一个文件重试。');
@@ -175,14 +246,18 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
       .map((name) => name.trim())
       .filter(Boolean);
     const parsedYear = Number(pdfYear);
+    const normalizedDoi = normalizeDoi(pdfDoi);
+    const doi = /^10\.\d{4,9}\//.test(normalizedDoi) ? normalizedDoi : undefined;
     const paper: Paper = {
       id: uid('paper-'),
       title,
-      abstract: '',
+      abstract: pdfAbstract.trim(),
       authors,
       year: Number.isFinite(parsedYear) && parsedYear > 0 ? Math.round(parsedYear) : null,
-      url: '',
-      citedByCount: 0,
+      url: doi ? `https://doi.org/${doi}` : pdfUrl.trim(),
+      citedByCount: pdfCitedByCount,
+      journal: pdfJournal.trim() || undefined,
+      doi,
       manual: true,
       pdfPages: pdfResult.pages,
       pdfFileName: pdfName || `${title}.pdf`,
@@ -198,6 +273,11 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
           ...existing,
           authors: existing.authors.length ? existing.authors : paper.authors,
           year: existing.year ?? paper.year,
+          abstract: existing.abstract || paper.abstract,
+          journal: existing.journal ?? paper.journal,
+          doi: existing.doi ?? paper.doi,
+          url: existing.url || paper.url,
+          citedByCount: existing.citedByCount || paper.citedByCount,
           pdfPages: paper.pdfPages,
           pdfFileName: paper.pdfFileName,
           pdfPageCount: paper.pdfPageCount,
@@ -301,6 +381,13 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
     setPdfTitle('');
     setPdfAuthors('');
     setPdfYear('');
+    setPdfJournal('');
+    setPdfDoi('');
+    setPdfUrl('');
+    setPdfAbstract('');
+    setPdfCitedByCount(0);
+    setPdfLookupLoading(false);
+    setPdfLookupNote('');
     setPdfProgress({ page: 0, total: 0 });
   }
 
@@ -613,8 +700,9 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
             <div className="mt-4">
               <button
                 type="button"
+                disabled={pdfLoading}
                 onClick={() => pdfRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-8 text-center transition hover:border-ink-faint hover:bg-surface"
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-8 text-center transition hover:border-ink-faint hover:bg-surface disabled:pointer-events-none disabled:opacity-60"
               >
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-accent-deep">
                   <UploadIcon className="h-5 w-5" />
@@ -696,7 +784,32 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
                         className="field field-sm"
                       />
                     </div>
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <input
+                        value={pdfJournal}
+                        onChange={(event) => setPdfJournal(event.target.value)}
+                        placeholder="期刊 / 来源（可选）"
+                        className="field field-sm"
+                      />
+                      <input
+                        value={pdfDoi}
+                        onChange={(event) => setPdfDoi(event.target.value)}
+                        placeholder="DOI（可选）"
+                        className="field field-sm"
+                      />
+                    </div>
                   </div>
+
+                  {pdfLookupLoading ? (
+                    <p className="mt-3 flex items-center gap-2 rounded-xl bg-paper/70 px-3 py-2 text-[10.5px] text-ink-faint">
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-ink-faint/30 border-t-ink" />
+                      正在 OpenAlex 匹配被引 / 期刊 / DOI…
+                    </p>
+                  ) : pdfLookupNote ? (
+                    <p className="mt-3 rounded-xl bg-paper/70 px-3 py-2 text-[10.5px] leading-relaxed text-ink-faint">
+                      {pdfLookupNote}
+                    </p>
+                  ) : null}
 
                   {pdfResult.pages[0] ? (
                     <details className="mt-3 rounded-xl bg-paper/70 px-3 py-2">
@@ -720,7 +833,7 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
               ) : null}
 
               <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
-                只在本机提取并保存文字，不保存原始 PDF。单篇最多 30 万字符；同名 / 同 DOI 的文献会直接把文字补到已有条目上。扫描件 / 图片型 PDF 需要先做 OCR。
+                只在本机提取并保存文字，不保存原始 PDF。自动用标题到 OpenAlex 匹配被引 / 期刊 / DOI（只发送标题，不发送正文）；匹配不到可手动补充。单篇最多 30 万字符；扫描件 / 图片型 PDF 需要先做 OCR。
               </p>
             </div>
           ) : null}
@@ -767,7 +880,7 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
                 mode === 'manual'
                   ? !manual.title.trim()
                   : mode === 'pdf'
-                    ? pdfLoading || !pdfResult || !pdfTitle.trim() || !pdfResult.charCount
+                    ? pdfLoading || pdfLookupLoading || !pdfResult || !pdfTitle.trim() || !pdfResult.charCount
                     : !selectedCount
               }
               className="btn btn-primary btn-sm flex-1"
@@ -777,11 +890,13 @@ export function LiteratureImport({ onClose, initialMode = 'manual', onImported }
                 : mode === 'pdf'
                   ? pdfLoading
                     ? '正在提取…'
-                    : pdfResult
-                      ? onImported
-                        ? '导入并阅读'
-                        : '导入 PDF'
-                      : '先选择 PDF'
+                    : pdfLookupLoading
+                      ? '正在匹配元数据…'
+                      : pdfResult
+                        ? onImported
+                          ? '导入并阅读'
+                          : '导入 PDF'
+                        : '先选择 PDF'
                   : `导入 ${selectedCount} 篇`}
             </button>
           </footer>
