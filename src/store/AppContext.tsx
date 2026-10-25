@@ -10,12 +10,16 @@ import {
 } from 'react';
 import {
   DEFAULT_SETTINGS,
+  STAGES,
   type DailyTask,
   type Paper,
   type PersistedState,
   type Project,
   type Settings,
+  type StageHistoryEntry,
 } from '../types';
+import { todayStr } from '../lib/date';
+import { rolloverProjects } from '../lib/tasks';
 
 const STORAGE_KEY = 'study-slicer:v1';
 
@@ -38,6 +42,12 @@ function sanitizeProject(raw: unknown): Project | null {
     papers: Array.isArray(p.papers) ? p.papers : [],
     directions: Array.isArray(p.directions) ? p.directions : [],
     aiMode: p.aiMode === 'tasks-only' ? 'tasks-only' : p.aiMode === 'full' ? 'full' : undefined,
+    stageHistory: Array.isArray(p.stageHistory)
+      ? p.stageHistory.filter(
+          (entry): entry is StageHistoryEntry =>
+            Boolean(entry) && STAGES.includes(entry.stage)
+        )
+      : [{ stage: p.stage, startedAt: p.createdAt ?? new Date().toISOString() }],
     dailyTasks: Array.isArray(p.dailyTasks)
       ? p.dailyTasks.map((t) => ({
           ...t,
@@ -45,6 +55,10 @@ function sanitizeProject(raw: unknown): Project | null {
           criteria: t.criteria ?? '',
           note: t.note ?? '',
           done: Boolean(t.done),
+          // 旧任务没有阶段字段，一律归到课题当前阶段
+          stage: t.stage && STAGES.includes(t.stage) ? t.stage : p.stage,
+          plannedDate: t.plannedDate || undefined,
+          rollovers: typeof t.rollovers === 'number' ? t.rollovers : undefined,
         }))
       : [],
   };
@@ -96,6 +110,7 @@ interface AppContextValue {
   setActiveProject: (projectId: string) => void;
   updateTask: (projectId: string, taskId: string, patch: Partial<DailyTask>) => void;
   updatePaper: (projectId: string, paperId: string, patch: Partial<Paper>) => void;
+  rolloverOverdue: () => void;
   saveSettings: (settings: Settings) => void;
 }
 
@@ -179,6 +194,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [updateProject]
   );
 
+  /** 每天打开应用时，把过期未完成任务顺延到今天，而不是让它们消失 */
+  const rolloverOverdue = useCallback(() => {
+    setState((prev) => {
+      const result = rolloverProjects(prev.projects, todayStr());
+      return result.moved ? { ...prev, projects: result.projects } : prev;
+    });
+  }, []);
+
+  // 启动、切回页面、跨过零点时都检查一次顺延
+  useEffect(() => {
+    rolloverOverdue();
+    const check = () => rolloverOverdue();
+    const timer = window.setInterval(check, 60_000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [rolloverOverdue]);
+
   const saveSettings = useCallback((settings: Settings) => {
     setState((prev) => ({ ...prev, settings }));
   }, []);
@@ -201,6 +238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setActiveProject,
       updateTask,
       updatePaper,
+      rolloverOverdue,
       saveSettings,
     }),
     [
@@ -213,6 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setActiveProject,
       updateTask,
       updatePaper,
+      rolloverOverdue,
       saveSettings,
     ]
   );

@@ -17,6 +17,13 @@ export const STAGES: Stage[] = [
 
 export type Feasibility = '高' | '中' | '低';
 
+/** 课题阶段流转记录，用于统计与回溯 */
+export interface StageHistoryEntry {
+  stage: Stage;
+  startedAt: string;
+  endedAt?: string;
+}
+
 /**
  * full：AI 可生成文献解读与研究方向
  * tasks-only：严格模式，AI 不参与内容创作，只在第 4 步拆解用户写好的方向
@@ -54,6 +61,16 @@ export interface Paper {
   irrelevant?: boolean;
   /** 用户粘贴进阅读器的全文，只存本机 */
   fullText?: string;
+  /** PDF 逐页提取的文字，用于电子书式阅读；只存本机 */
+  pdfPages?: string[];
+  /** 原始 PDF 文件名 */
+  pdfFileName?: string;
+  /** 原始 PDF 页数（可能大于已提取的页数） */
+  pdfPageCount?: number;
+  /** 是否因为存储上限截断了提取文字 */
+  pdfTruncated?: boolean;
+  /** 上次阅读到的 PDF 页（0-based） */
+  pdfLastPage?: number;
 }
 
 export interface Direction {
@@ -75,6 +92,12 @@ export interface DailyTask {
   /** 预计分钟数，建议 ≤ 45 */
   minutes?: number;
   linkedDirectionId?: string;
+  /** 任务属于哪个阶段；同一课题跨阶段的任务都存放在 dailyTasks 里 */
+  stage?: Stage;
+  /** 被顺延前最早的原定日期，用于显示「顺延自 X 月 X 日」 */
+  plannedDate?: string;
+  /** 自动顺延过多少次 */
+  rollovers?: number;
   done: boolean;
   /** ISO 时间戳 */
   completedAt?: string;
@@ -90,6 +113,8 @@ export interface Project {
   papers: Paper[];
   directions: Direction[];
   dailyTasks: DailyTask[];
+  /** 阶段流转记录；旧数据会自动补齐当前阶段 */
+  stageHistory?: StageHistoryEntry[];
   /** 创建课题时使用的 AI 参与范围，用于事后追溯 */
   aiMode?: AiMode;
 }

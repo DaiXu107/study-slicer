@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -16,6 +16,7 @@ import {
   XIcon,
 } from '../components/Icons';
 import type {
+  AiMode,
   DailyTask,
   Direction,
   Feasibility,
@@ -28,6 +29,7 @@ import { STAGES } from '../types';
 import { addDays, friendlyDate, groupByDate, sortTasksByDate, todayStr } from '../lib/date';
 import { EMPTY_DRAFT, clearDraft, hasDraftContent, loadDraft, saveDraft } from '../lib/draft';
 import { buildFallbackTasks, makeEmptyTask } from '../lib/fallbackTasks';
+import { nextStageOf, withStage } from '../lib/tasks';
 import { chatComplete, parseLooseJSON } from '../lib/llm';
 import { createManualPaper, searchWorks } from '../lib/openalex';
 import {
@@ -147,11 +149,64 @@ function normalizeFeasibility(value?: string): Feasibility {
   return value === '高' || value === '低' ? value : '中';
 }
 
+/** 从已有课题进入「下一阶段」时，复用课题信息，只生成新阶段任务 */
+function makeExtensionDraft(
+  project: Project,
+  rawStage: string | null,
+  fallbackMode: AiMode
+): WizardDraft {
+  const targetStage = STAGES.includes(rawStage as Stage)
+    ? (rawStage as Stage)
+    : nextStageOf(project.stage) ?? project.stage;
+  const chosenPapers = project.papers.filter((paper) => paper.selected);
+  const selectedPapers = chosenPapers.length ? chosenPapers : project.papers;
+  const directions = project.directions.length
+    ? project.directions.map((direction) => ({ ...direction }))
+    : [
+        {
+          id: uid('dir-'),
+          title: project.title,
+          description: '沿用当前课题方向，把这一阶段拆成可执行的小任务。',
+          feasibility: '中' as Feasibility,
+          selected: true,
+        },
+      ];
+  if (!directions.some((direction) => direction.selected)) {
+    directions[0] = { ...directions[0], selected: true };
+  }
+
+  return {
+    step: 4,
+    title: project.title,
+    stage: targetStage,
+    keywords: project.keywords ?? '',
+    query: project.keywords || project.title,
+    results: project.papers,
+    selectedIds: selectedPapers.slice(0, MAX_PAPERS).map((paper) => paper.id),
+    directions,
+    tasks: [],
+    aiMode: project.aiMode ?? fallbackMode,
+  };
+}
+
 export function Wizard() {
-  const { settings, createProject } = useApp();
+  const { projects, settings, createProject, updateProject, setActiveProject } = useApp();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const extendId = searchParams.get('extend');
+  const extendProject = extendId
+    ? projects.find((project) => project.id === extendId)
+    : undefined;
+  const isExtension = Boolean(extendProject);
 
   const [draft, setDraft] = useState<WizardDraft>(() => {
+    if (extendProject) {
+      return makeExtensionDraft(
+        extendProject,
+        searchParams.get('stage'),
+        settings.aiMode
+      );
+    }
     const saved = loadDraft();
     if (!saved) return { ...EMPTY_DRAFT, aiMode: settings.aiMode };
     return { ...saved, aiMode: saved.aiMode ?? settings.aiMode };
@@ -192,14 +247,16 @@ export function Wizard() {
   draftRef.current = draft;
 
   useEffect(() => {
+    if (isExtension) return;
     const timer = window.setTimeout(() => {
       if (hasDraftContent(draft)) saveDraft(draft);
       else clearDraft();
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [draft]);
+  }, [draft, isExtension]);
 
   useEffect(() => {
+    if (isExtension) return;
     const flush = () => {
       if (hasDraftContent(draftRef.current)) saveDraft(draftRef.current);
     };
@@ -209,7 +266,7 @@ export function Wizard() {
       window.removeEventListener('pagehide', flush);
       window.removeEventListener('beforeunload', flush);
     };
-  }, []);
+  }, [isExtension]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -220,6 +277,15 @@ export function Wizard() {
   }
 
   function goBack() {
+    if (isExtension) {
+      if (extendProject) {
+        setActiveProject(extendProject.id);
+        navigate(`/tasks?project=${extendProject.id}`);
+      } else {
+        navigate('/projects');
+      }
+      return;
+    }
     if (draft.step <= 1) navigate('/projects');
     else setDraft((d) => ({ ...d, step: d.step - 1 }));
   }
@@ -569,28 +635,53 @@ export function Wizard() {
 
   function finish() {
     if (!draft.stage || !draft.title.trim()) return;
+    const now = new Date().toISOString();
+    const cleanTasks: DailyTask[] = draft.tasks
+      .filter((task) => task.title.trim())
+      .map((task) => ({
+        ...task,
+        title: task.title.trim(),
+        description: task.description.trim(),
+        criteria: task.criteria.trim(),
+        stage: draft.stage as Stage,
+      }));
+
+    if (extendProject) {
+      const projectId = extendProject.id;
+      updateProject(projectId, (project) => {
+        const merged = withStage(project, draft.stage as Stage, now);
+        return {
+          ...merged,
+          keywords: draft.keywords.trim() || project.keywords,
+          directions: draft.directions
+            .filter((direction) => direction.title.trim())
+            .map((direction) => ({ ...direction })),
+          // 关键：不同阶段的任务都追加到同一个课题，进度统计不分裂
+          dailyTasks: [...project.dailyTasks, ...cleanTasks],
+        };
+      });
+      setActiveProject(projectId);
+      setDraft({ ...EMPTY_DRAFT, aiMode: settings.aiMode });
+      navigate(`/tasks?project=${projectId}`);
+      return;
+    }
+
     const project: Project = {
       id: uid('project-'),
       title: draft.title.trim(),
       stage: draft.stage,
       keywords: draft.keywords.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       aiMode: strictMode ? 'tasks-only' : 'full',
-      papers: draft.results.map((p) => ({
-        ...p,
-        selected: draft.selectedIds.includes(p.id),
+      stageHistory: [{ stage: draft.stage, startedAt: now }],
+      papers: draft.results.map((paper) => ({
+        ...paper,
+        selected: draft.selectedIds.includes(paper.id),
       })),
       directions: draft.directions
-        .filter((d) => d.title.trim())
-        .map((d) => ({ ...d })),
-      dailyTasks: draft.tasks
-        .filter((t) => t.title.trim())
-        .map((t) => ({
-          ...t,
-          title: t.title.trim(),
-          description: t.description.trim(),
-          criteria: t.criteria.trim(),
-        })),
+        .filter((direction) => direction.title.trim())
+        .map((direction) => ({ ...direction })),
+      dailyTasks: cleanTasks,
     };
     createProject(project);
     setDraft({ ...EMPTY_DRAFT, aiMode: settings.aiMode });
@@ -620,8 +711,9 @@ export function Wizard() {
           : draft.tasks.some((t) => t.title.trim());
 
   const busy = analysisLoading || taskLoading;
-  const nextLabel =
-    draft.step === 1
+  const nextLabel = isExtension
+    ? '完成，加入课题'
+    : draft.step === 1
       ? '下一步'
       : draft.step === 2
         ? '选好了，看方向'
@@ -642,16 +734,33 @@ export function Wizard() {
             <ArrowLeftIcon className="h-[18px] w-[18px]" />
           </button>
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-ink-faint">
-              第 {draft.step} 步 / 共 4 步
-            </p>
-            <p className="mt-0.5 text-[13px] font-medium text-ink">
-              {STEP_TITLES[draft.step - 1]}
-            </p>
+            {isExtension ? (
+              <>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                  继续课题
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium text-ink">
+                  {draft.stage || extendProject?.stage} · 添加任务
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                  第 {draft.step} 步 / 共 4 步
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium text-ink">
+                  {STEP_TITLES[draft.step - 1]}
+                </p>
+              </>
+            )}
           </div>
           <button
             type="button"
-            onClick={() => navigate('/projects')}
+            onClick={() =>
+              isExtension && extendProject
+                ? navigate(`/tasks?project=${extendProject.id}`)
+                : navigate('/projects')
+            }
             aria-label="退出向导"
             title="退出（草稿会自动保留）"
             className="grid h-9 w-9 place-items-center rounded-full text-ink-faint transition hover:bg-ink/5 hover:text-ink"
@@ -659,17 +768,23 @@ export function Wizard() {
             <XIcon className="h-[18px] w-[18px]" />
           </button>
         </div>
-        <div className="mx-auto flex w-full max-w-2xl gap-1.5 px-5 pb-3">
-          {[1, 2, 3, 4].map((n) => (
-            <span
-              key={n}
-              className={cx(
-                'h-1 flex-1 rounded-full transition-colors duration-300',
-                n <= draft.step ? 'bg-ink' : 'bg-line'
-              )}
-            />
-          ))}
-        </div>
+        {isExtension ? (
+          <div className="mx-auto flex w-full max-w-2xl gap-1.5 px-5 pb-3">
+            <span className="h-1 flex-1 rounded-full bg-ink" />
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-2xl gap-1.5 px-5 pb-3">
+            {[1, 2, 3, 4].map((n) => (
+              <span
+                key={n}
+                className={cx(
+                  'h-1 flex-1 rounded-full transition-colors duration-300',
+                  n <= draft.step ? 'bg-ink' : 'bg-line'
+                )}
+              />
+            ))}
+          </div>
+        )}
       </header>
 
       <main className="mx-auto w-full max-w-2xl px-5 pb-36 pt-7">
@@ -1403,13 +1518,51 @@ export function Wizard() {
 
           {draft.step === 4 ? (
             <section>
+              {isExtension && extendProject ? (
+                <div className="mb-5 rounded-3xl border border-line bg-surface/70 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+                    当前课题
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold leading-snug text-ink">
+                    {extendProject.title}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <label
+                      htmlFor="extend-stage"
+                      className="text-[11.5px] text-ink-faint"
+                    >
+                      新阶段
+                    </label>
+                    <select
+                      id="extend-stage"
+                      value={draft.stage}
+                      onChange={(event) =>
+                        patch({ stage: event.target.value as Stage })
+                      }
+                      className="rounded-full border border-line bg-surface px-3 py-1.5 text-[12px] text-ink outline-none"
+                    >
+                      {STAGES.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[10.5px] text-ink-faint">
+                      可跳过任意阶段；已有 {extendProject.dailyTasks.length} 块任务会全部保留
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
               <h1 className="text-[27px] font-semibold leading-tight tracking-tight">
-                把方向，拆成每天的一小块
+                {isExtension ? '把新阶段，拆成每天的一小块' : '把方向，拆成每天的一小块'}
               </h1>
               <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
-                {strictMode
-                  ? '严格模式：AI 只把你的方向拆成 20–45 分钟的行动步骤，不新增研究内容。'
-                  : '10–15 个任务，每个 20–45 分钟。先跑起来，再慢慢调整。'}
+                {isExtension
+                  ? '只生成新阶段的任务，完成记录、文献和统计都留在同一个课题里。'
+                  : strictMode
+                    ? '严格模式：AI 只把你的方向拆成 20–45 分钟的行动步骤，不新增研究内容。'
+                    : '10–15 个任务，每个 20–45 分钟。先跑起来，再慢慢调整。'}
               </p>
 
               <div className="mt-4 rounded-2xl bg-surface/60 px-4 py-3 text-[11.5px] leading-relaxed text-ink-soft">
@@ -1569,7 +1722,7 @@ export function Wizard() {
       <footer className="fixed bottom-0 left-0 right-0 z-40 border-t border-line/60 bg-paper/95 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button type="button" onClick={goBack} className="btn btn-secondary flex-1">
-            {draft.step === 1 ? '退出' : '上一步'}
+            {isExtension ? '取消' : draft.step === 1 ? '退出' : '上一步'}
           </button>
           <button
             type="button"

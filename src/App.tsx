@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
+import { AllTasks } from './pages/AllTasks';
 import { Projects } from './pages/Projects';
 import { Library } from './pages/Library';
 import { SettingsPage } from './pages/Settings';
@@ -17,6 +18,7 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<Dashboard />} />
+              <Route path="tasks" element={<AllTasks />} />
               <Route path="projects" element={<Projects />} />
               <Route path="library" element={<Library />} />
               <Route path="settings" element={<SettingsPage />} />

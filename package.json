@@ -1,7 +1,7 @@
 {
   "name": "study-slicer",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.7.0",
   "description": "把 PhD / 硕士课题拆成每日 45 分钟小任务的本地优先学习工具",
   "author": "DaiXu107",
   "license": "MIT",
@@ -25,13 +25,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:electron": "tsc --noEmit && vite build --mode electron",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "electron:renderer": "bun scripts/build-electron.mjs",
-    "electron:dev": "bun run build && bun run electron:renderer && electron .",
-    "electron:build": "bun run build && bun run electron:renderer && electron-builder --win nsis"
+    "electron:dev": "bun run build:electron && bun run electron:renderer && electron .",
+    "electron:build": "bun run build:electron && bun run electron:renderer && electron-builder --win nsis"
   },
   "dependencies": {
+    "pdfjs-dist": "6.4.299",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"

@@ -3,14 +3,18 @@ import { createPortal } from 'react-dom';
 import type { Paper, Project } from '../types';
 import { createManualPaper } from '../lib/openalex';
 import { parseBibliography } from '../lib/importers';
-import { cx, pluralAuthors } from '../lib/utils';
+import { MAX_PDF_BYTES, extractPdfText, type ExtractedPdf } from '../lib/pdf';
+import { cx, pluralAuthors, uid } from '../lib/utils';
 import { useApp } from '../store/AppContext';
 import { CheckIcon, UploadIcon, XIcon } from './Icons';
 
-type Mode = 'manual' | 'file' | 'done';
+export type ImportMode = 'manual' | 'file' | 'pdf';
+type Mode = ImportMode | 'done';
 
 interface Props {
   onClose: () => void;
+  initialMode?: ImportMode;
+  onImported?: (projectId: string, paper: Paper) => void;
 }
 
 const EMPTY_MANUAL = {
@@ -23,10 +27,10 @@ const EMPTY_MANUAL = {
   url: '',
 };
 
-function isDuplicate(paper: Paper, project: Project): boolean {
+function findDuplicate(paper: Paper, project: Project): Paper | undefined {
   const title = paper.title.trim().toLowerCase();
   const doi = paper.doi?.trim().toLowerCase();
-  return project.papers.some(
+  return project.papers.find(
     (existing) =>
       existing.id === paper.id ||
       (Boolean(doi) && existing.doi?.trim().toLowerCase() === doi) ||
@@ -34,9 +38,14 @@ function isDuplicate(paper: Paper, project: Project): boolean {
   );
 }
 
-export function LiteratureImport({ onClose }: Props) {
+function isDuplicate(paper: Paper, project: Project): boolean {
+  return Boolean(findDuplicate(paper, project));
+}
+
+export function LiteratureImport({ onClose, initialMode = 'manual', onImported }: Props) {
   const { projects, activeProjectId, updateProject } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
+  const pdfRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const [projectId, setProjectId] = useState(
@@ -44,7 +53,7 @@ export function LiteratureImport({ onClose }: Props) {
       ? activeProjectId
       : projects[0]?.id ?? ''
   );
-  const [mode, setMode] = useState<Mode>('manual');
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [manual, setManual] = useState(EMPTY_MANUAL);
   const [fileName, setFileName] = useState('');
   const [parsed, setParsed] = useState<Paper[]>([]);
@@ -52,6 +61,13 @@ export function LiteratureImport({ onClose }: Props) {
   const [error, setError] = useState('');
   const [importedCount, setImportedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [pdfName, setPdfName] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState({ page: 0, total: 0 });
+  const [pdfResult, setPdfResult] = useState<ExtractedPdf | null>(null);
+  const [pdfTitle, setPdfTitle] = useState('');
+  const [pdfAuthors, setPdfAuthors] = useState('');
+  const [pdfYear, setPdfYear] = useState('');
 
   const targetProject = projects.find((project) => project.id === projectId) ?? projects[0];
 
@@ -104,6 +120,114 @@ export function LiteratureImport({ onClose }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : '文件解析失败。');
     }
+  }
+
+  async function handlePdfFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError('');
+    setPdfResult(null);
+    setPdfName(file.name);
+    if (file.size > MAX_PDF_BYTES) {
+      setError('PDF 不能超过 50 MB。');
+      return;
+    }
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+      setError('请选择 PDF 文件。');
+      return;
+    }
+
+    setPdfLoading(true);
+    setPdfProgress({ page: 0, total: 0 });
+    try {
+      const result = await extractPdfText(file, (progress) => setPdfProgress(progress));
+      setPdfResult(result);
+      setPdfTitle(result.title);
+      setPdfAuthors(result.authors.join(', '));
+      setPdfYear(result.year ? String(result.year) : '');
+      if (!result.charCount) {
+        setError(
+          '这个 PDF 没有提取到文字，可能是扫描件或图片型 PDF。可以先用 OCR 工具生成可搜索 PDF，再把文字导入。'
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PDF 解析失败，请换一个文件重试。');
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  function handlePdfImport() {
+    if (!targetProject || !pdfResult) return;
+    const title = pdfTitle.trim();
+    if (!title) {
+      setError('标题不能为空。');
+      return;
+    }
+    if (!pdfResult.charCount) {
+      setError('这个 PDF 没有提取到文字，暂时无法导入。');
+      return;
+    }
+
+    const authors = pdfAuthors
+      .split(/[;,、\n]/)
+      .map((name) => name.trim())
+      .filter(Boolean);
+    const parsedYear = Number(pdfYear);
+    const paper: Paper = {
+      id: uid('paper-'),
+      title,
+      abstract: '',
+      authors,
+      year: Number.isFinite(parsedYear) && parsedYear > 0 ? Math.round(parsedYear) : null,
+      url: '',
+      citedByCount: 0,
+      manual: true,
+      pdfPages: pdfResult.pages,
+      pdfFileName: pdfName || `${title}.pdf`,
+      pdfPageCount: pdfResult.pageCount,
+      pdfTruncated: pdfResult.truncated || undefined,
+    };
+
+    if (isDuplicate(paper, targetProject)) {
+      const existing = findDuplicate(paper, targetProject);
+      if (existing) {
+        // 同名 / 同 DOI 的文献已经存在：直接把 PDF 文字补到这篇上，不新建重复条目。
+        const merged: Paper = {
+          ...existing,
+          authors: existing.authors.length ? existing.authors : paper.authors,
+          year: existing.year ?? paper.year,
+          pdfPages: paper.pdfPages,
+          pdfFileName: paper.pdfFileName,
+          pdfPageCount: paper.pdfPageCount,
+          pdfTruncated: paper.pdfTruncated,
+          pdfLastPage: undefined,
+        };
+        updateProject(targetProject.id, (project) => ({
+          ...project,
+          papers: project.papers.map((item) =>
+            item.id === existing.id ? merged : item
+          ),
+        }));
+        setImportedCount(1);
+        setSkippedCount(0);
+        setMode('done');
+        onImported?.(targetProject.id, merged);
+        return;
+      }
+      setError('这篇文献已经在当前课题的文献库里了。');
+      return;
+    }
+
+    updateProject(targetProject.id, (project) => ({
+      ...project,
+      papers: [...project.papers, paper],
+    }));
+    setImportedCount(1);
+    setSkippedCount(0);
+    setMode('done');
+    onImported?.(targetProject.id, paper);
   }
 
   function togglePaper(id: string) {
@@ -172,6 +296,12 @@ export function LiteratureImport({ onClose }: Props) {
     setImportedCount(0);
     setSkippedCount(0);
     setManual(EMPTY_MANUAL);
+    setPdfName('');
+    setPdfResult(null);
+    setPdfTitle('');
+    setPdfAuthors('');
+    setPdfYear('');
+    setPdfProgress({ page: 0, total: 0 });
   }
 
   if (!targetProject) {
@@ -208,7 +338,7 @@ export function LiteratureImport({ onClose }: Props) {
             <p className="eyebrow">Library</p>
             <h2 className="mt-1 text-[20px] font-semibold tracking-tight">添加文献</h2>
             <p className="mt-1 text-[12px] text-ink-soft">
-              手动录入，或导入本地 BibTeX / RIS 文件。
+              手动录入，导入 BibTeX / RIS，或上传 PDF 提取文字后在站内阅读。
             </p>
           </div>
           <button
@@ -268,13 +398,28 @@ export function LiteratureImport({ onClose }: Props) {
                   setError('');
                 }}
                 className={cx(
-                  'flex-1 rounded-xl px-3 py-2 text-[12.5px] transition',
+                  'flex-1 rounded-xl px-2 py-2 text-[12px] transition',
                   mode === 'file'
                     ? 'bg-surface font-medium text-ink shadow-card'
                     : 'text-ink-faint hover:text-ink-soft'
                 )}
               >
-                导入文件
+                BibTeX / RIS
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('pdf');
+                  setError('');
+                }}
+                className={cx(
+                  'flex-1 rounded-xl px-2 py-2 text-[12px] transition',
+                  mode === 'pdf'
+                    ? 'bg-surface font-medium text-ink shadow-card'
+                    : 'text-ink-faint hover:text-ink-soft'
+                )}
+              >
+                PDF 文件
               </button>
             </div>
           ) : null}
@@ -459,7 +604,123 @@ export function LiteratureImport({ onClose }: Props) {
               ) : null}
 
               <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
-                暂不支持直接解析 PDF。可以先导入 .bib / .ris，或把 PDF 正文粘贴到阅读器的「全文」里。
+                也可以切到「PDF 文件」，直接导入文字型 PDF，自动提取正文。
+              </p>
+            </div>
+          ) : null}
+
+          {mode === 'pdf' ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => pdfRef.current?.click()}
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-line bg-surface/50 px-5 py-8 text-center transition hover:border-ink-faint hover:bg-surface"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-accent-deep">
+                  <UploadIcon className="h-5 w-5" />
+                </span>
+                <span className="text-[13px] font-medium text-ink">
+                  {pdfName || '选择 PDF 文件'}
+                </span>
+                <span className="text-[10.5px] text-ink-faint">
+                  文字型 PDF，最大 50 MB · 在本机提取，不上传
+                </span>
+              </button>
+              <input
+                ref={pdfRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className="sr-only"
+                onChange={(event) => void handlePdfFile(event)}
+              />
+
+              {pdfLoading ? (
+                <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-4">
+                  <div className="flex items-center justify-between gap-3 text-[12px]">
+                    <span className="font-medium text-ink">正在提取文字…</span>
+                    <span className="text-[10.5px] text-ink-faint">
+                      {pdfProgress.total
+                        ? `${pdfProgress.page} / ${pdfProgress.total} 页`
+                        : '正在解析 PDF'}
+                    </span>
+                  </div>
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-line/80">
+                    <div
+                      className="h-full rounded-full bg-ink transition-all duration-300"
+                      style={{
+                        width: pdfProgress.total
+                          ? `${Math.round((pdfProgress.page / pdfProgress.total) * 100)}%`
+                          : '12%',
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[10.5px] text-ink-faint">
+                    页数多时可能需要十几秒，期间可以继续切到其他页面。
+                  </p>
+                </div>
+              ) : null}
+
+              {pdfResult ? (
+                <div className="mt-4 rounded-2xl border border-line bg-surface p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[12px] font-medium text-ink">
+                      已提取 {pdfResult.pages.length} / {pdfResult.pageCount} 页 ·{' '}
+                      {pdfResult.charCount.toLocaleString()} 字
+                    </p>
+                    {pdfResult.truncated ? (
+                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[9.5px] text-accent-deep">
+                        已按 30 万字符上限截断
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-3 space-y-2.5">
+                    <input
+                      value={pdfTitle}
+                      onChange={(event) => setPdfTitle(event.target.value)}
+                      placeholder="文献标题"
+                      className="field field-sm"
+                    />
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <input
+                        value={pdfAuthors}
+                        onChange={(event) => setPdfAuthors(event.target.value)}
+                        placeholder="作者，用逗号分隔（可选）"
+                        className="field field-sm"
+                      />
+                      <input
+                        value={pdfYear}
+                        onChange={(event) => setPdfYear(event.target.value)}
+                        placeholder="年份（可选）"
+                        inputMode="numeric"
+                        className="field field-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {pdfResult.pages[0] ? (
+                    <details className="mt-3 rounded-xl bg-paper/70 px-3 py-2">
+                      <summary className="cursor-pointer text-[11px] text-ink-soft">
+                        预览第一页
+                      </summary>
+                      <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-ink-soft">
+                        {pdfResult.pages[0].slice(0, 1200)}
+                      </p>
+                    </details>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => pdfRef.current?.click()}
+                    className="mt-3 text-[11px] text-ink-faint underline decoration-line underline-offset-4 transition hover:text-ink-soft"
+                  >
+                    重新选择 PDF
+                  </button>
+                </div>
+              ) : null}
+
+              <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
+                只在本机提取并保存文字，不保存原始 PDF。单篇最多 30 万字符；同名 / 同 DOI 的文献会直接把文字补到已有条目上。扫描件 / 图片型 PDF 需要先做 OCR。
               </p>
             </div>
           ) : null}
@@ -496,18 +757,32 @@ export function LiteratureImport({ onClose }: Props) {
               onClick={() => {
                 if (mode === 'manual') {
                   formRef.current?.requestSubmit();
-                } else {
+                } else if (mode === 'file') {
                   handleFileImport();
+                } else {
+                  handlePdfImport();
                 }
               }}
               disabled={
                 mode === 'manual'
                   ? !manual.title.trim()
-                  : !selectedCount
+                  : mode === 'pdf'
+                    ? pdfLoading || !pdfResult || !pdfTitle.trim() || !pdfResult.charCount
+                    : !selectedCount
               }
               className="btn btn-primary btn-sm flex-1"
             >
-              {mode === 'manual' ? '添加到文献库' : `导入 ${selectedCount} 篇`}
+              {mode === 'manual'
+                ? '添加到文献库'
+                : mode === 'pdf'
+                  ? pdfLoading
+                    ? '正在提取…'
+                    : pdfResult
+                      ? onImported
+                        ? '导入并阅读'
+                        : '导入 PDF'
+                      : '先选择 PDF'
+                  : `导入 ${selectedCount} 篇`}
             </button>
           </footer>
         ) : null}
