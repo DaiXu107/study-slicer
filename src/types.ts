@@ -61,6 +61,16 @@ export interface Paper {
   irrelevant?: boolean;
   /** 用户粘贴进阅读器的全文，只存本机 */
   fullText?: string;
+  /** PDF 逐页提取的文字，用于电子书式阅读；只存本机 */
+  pdfPages?: string[];
+  /** 原始 PDF 文件名 */
+  pdfFileName?: string;
+  /** 原始 PDF 页数（可能大于已提取的页数） */
+  pdfPageCount?: number;
+  /** 是否因为存储上限截断了提取文字 */
+  pdfTruncated?: boolean;
+  /** 上次阅读到的 PDF 页（0-based） */
+  pdfLastPage?: number;
 }
 
 export interface Direction {

@@ -104,6 +104,11 @@ export function LibraryPaperCard({
                 本地
               </span>
             ) : null}
+            {paper.pdfPages?.length ? (
+              <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] text-paper">
+                PDF · {paper.pdfPages.length} 页
+              </span>
+            ) : null}
           </p>
 
           {paper.abstract ? (

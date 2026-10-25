@@ -7,6 +7,7 @@ import { cx, pluralAuthors, truncate } from '../lib/utils';
 import { useApp } from '../store/AppContext';
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   BookIcon,
   ExternalLinkIcon,
   PlusIcon,
@@ -14,6 +15,7 @@ import {
   StarIcon,
   XIcon,
 } from './Icons';
+import { PdfBookReader } from './PdfBookReader';
 
 interface Props {
   paper: Paper;
@@ -37,6 +39,7 @@ export function PaperReader({
   const lastSelectionRef = useRef('');
 
   const [selection, setSelection] = useState('');
+  const [ebookOpen, setEbookOpen] = useState(false);
   const [editingFullText, setEditingFullText] = useState(false);
   const [fullTextDraft, setFullTextDraft] = useState(paper.fullText ?? '');
   const [translation, setTranslation] = useState('');
@@ -50,14 +53,17 @@ export function PaperReader({
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        if (ebookOpen) setEbookOpen(false);
+        else onClose();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener('keydown', onKey);
     };
-  }, [onClose]);
+  }, [onClose, ebookOpen]);
 
   useEffect(() => {
     let timer = 0;
@@ -193,6 +199,31 @@ export function PaperReader({
   const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(`${selection} 意思`)}`;
   const scholarUrl = `https://www.semanticscholar.org/search?q=${encoded}`;
 
+  const pdfPages = paper.pdfPages ?? [];
+  const pdfChars = pdfPages.reduce((sum, page) => sum + page.length, 0);
+  const pdfLastPage = Math.min(
+    Math.max(paper.pdfLastPage ?? 0, 0),
+    Math.max(pdfPages.length - 1, 0)
+  );
+
+  function clearPdfText() {
+    if (
+      !window.confirm(
+        '移除这篇 PDF 的提取文字？原始 PDF 文件不会被修改或删除，可以之后重新导入。'
+      )
+    ) {
+      return;
+    }
+    setEbookOpen(false);
+    onUpdatePaper({
+      pdfPages: undefined,
+      pdfFileName: undefined,
+      pdfPageCount: undefined,
+      pdfTruncated: undefined,
+      pdfLastPage: undefined,
+    });
+  }
+
   return createPortal(
     <div
       className="fixed inset-0 z-[85] overflow-y-auto bg-paper"
@@ -204,11 +235,11 @@ export function PaperReader({
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-5 py-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => (ebookOpen ? setEbookOpen(false) : onClose())}
             className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-soft transition hover:text-ink"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            返回
+            {ebookOpen ? '书籍信息' : '返回'}
           </button>
           <span className="min-w-0 truncate text-[11px] text-ink-faint">{projectTitle}</span>
           {paper.url ? (
@@ -227,6 +258,13 @@ export function PaperReader({
         </div>
       </header>
 
+      {ebookOpen && pdfPages.length ? (
+        <PdfBookReader
+          key={paper.id}
+          paper={paper}
+          onUpdatePaper={onUpdatePaper}
+        />
+      ) : (
       <main className="mx-auto w-full max-w-2xl px-5 pb-48 pt-6">
         <p className="eyebrow">Reading</p>
         <h1 className="mt-2 text-[25px] font-semibold leading-tight tracking-tight text-ink">
@@ -297,6 +335,11 @@ export function PaperReader({
               本地
             </span>
           ) : null}
+          {pdfPages.length ? (
+            <span className="rounded-full bg-ink px-2.5 py-1 text-[10px] text-paper">
+              PDF · {pdfPages.length} 页
+            </span>
+          ) : null}
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -313,8 +356,49 @@ export function PaperReader({
           ) : null}
         </div>
         <p className="mt-2 text-[10.5px] leading-relaxed text-ink-faint">
-          站内展示摘要、解读与笔记。出版社页面通常禁止嵌入，所以原文会在新标签页打开。
+          站内展示摘要、解读、笔记与导入的 PDF 文字。出版社页面通常禁止嵌入，所以原文会在新标签页打开。
         </p>
+
+        {pdfPages.length ? (
+          <section className="mt-5 rounded-3xl border border-ink/10 bg-surface p-5 shadow-card">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="eyebrow text-accent-deep">PDF Book</p>
+                <h2 className="mt-1 text-[17px] font-semibold">PDF 电子书</h2>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-ink-soft">
+                  {paper.pdfFileName ? `${paper.pdfFileName} · ` : ''}
+                  {pdfPages.length} / {paper.pdfPageCount ?? pdfPages.length} 页 ·{' '}
+                  {pdfChars.toLocaleString()} 字
+                </p>
+                <p className="mt-1 text-[10.5px] text-ink-faint">
+                  文字已在本机提取，不保存原始 PDF，也不会上传。
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-[10px] text-accent-deep">
+                PDF
+              </span>
+            </div>
+            {paper.pdfTruncated ? (
+              <p className="mt-3 rounded-2xl border border-accent/20 bg-accent-soft/60 px-3.5 py-2 text-[10.5px] leading-relaxed text-accent-deep">
+                单篇文字超过 30 万字符，已保留前 {pdfPages.length} 页。
+              </p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEbookOpen(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <BookIcon className="h-3.5 w-3.5" />
+                {pdfLastPage > 0 ? `从第 ${pdfLastPage + 1} 页继续` : '开始阅读'}
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={clearPdfText} className="btn btn-ghost btn-sm">
+                移除 PDF 文字
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-6 rounded-3xl border border-line bg-surface p-5 shadow-card">
           <div className="flex items-center justify-between gap-3">
@@ -343,12 +427,13 @@ export function PaperReader({
           ) : null}
         </section>
 
+        {!pdfPages.length || paper.fullText ? (
         <section className="mt-4 card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-[15px] font-semibold">全文</h2>
+              <h2 className="text-[15px] font-semibold">粘贴全文</h2>
               <p className="mt-0.5 text-[10.5px] leading-relaxed text-ink-faint">
-                可选：把 PDF 或网页正文粘进来，在站内大字号阅读、划词。只保存在本机。
+                可选：把网页正文粘进来，在站内大字号阅读、划词。只保存在本机。
               </p>
             </div>
             {paper.fullText && !editingFullText ? (
@@ -418,6 +503,7 @@ export function PaperReader({
             </button>
           )}
         </section>
+        ) : null}
 
         <section className="mt-4 card p-5">
           <h2 className="text-[15px] font-semibold">我的笔记</h2>
@@ -501,6 +587,7 @@ export function PaperReader({
           </section>
         ) : null}
       </main>
+      )}
 
       {selection ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md">
