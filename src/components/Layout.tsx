@@ -12,7 +12,13 @@ const NAV = [
 export function Layout() {
   return (
     <div className="min-h-screen">
-      <div className="mx-auto w-full max-w-2xl px-5 pb-32 pt-6 sm:px-8 sm:pt-10">
+      <div className="theme-meteors" aria-hidden="true">
+        <span style={{ top: '4%', right: '10%', animationDelay: '0s', animationDuration: '8s' }} />
+        <span style={{ top: '18%', right: '-4%', animationDelay: '2.4s', animationDuration: '10s' }} />
+        <span style={{ top: '-4%', right: '34%', animationDelay: '4.6s', animationDuration: '9s' }} />
+        <span style={{ top: '32%', right: '22%', animationDelay: '6.8s', animationDuration: '11s' }} />
+      </div>
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-32 pt-6 sm:px-8 sm:pt-10">
         <header className="flex items-center justify-between">
           <Link to="/" className="group flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-paper transition-transform group-active:scale-95">
