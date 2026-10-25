@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { LibraryPaperCard } from '../components/LibraryPaperCard';
-import { LiteratureImport, type ImportMode } from '../components/LiteratureImport';
+import { LiteratureImport } from '../components/LiteratureImport';
 import { LiteratureSearch } from '../components/LiteratureSearch';
 import { PaperReader } from '../components/PaperReader';
 import { ReferenceExport } from '../components/ReferenceExport';
@@ -13,7 +13,6 @@ import {
   FolderIcon,
   PlusIcon,
   SearchIcon,
-  UploadIcon,
 } from '../components/Icons';
 import type { Paper, Project } from '../types';
 import { chatComplete } from '../lib/llm';
@@ -43,7 +42,6 @@ export function Library() {
   );
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [importMode, setImportMode] = useState<ImportMode>('manual');
   const [searchProjectId, setSearchProjectId] = useState<string | null>(null);
   const [filter, setFilter] = useState<LibraryFilter>('all');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
@@ -235,27 +233,11 @@ export function Library() {
         {projects.length ? (
           <button
             type="button"
-            onClick={() => {
-              setImportMode('manual');
-              setImportOpen(true);
-            }}
+            onClick={() => setImportOpen(true)}
             className="btn btn-primary btn-sm"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             添加文献
-          </button>
-        ) : null}
-        {projects.length ? (
-          <button
-            type="button"
-            onClick={() => {
-              setImportMode('pdf');
-              setImportOpen(true);
-            }}
-            className="btn btn-secondary btn-sm"
-          >
-            <UploadIcon className="h-3.5 w-3.5" />
-            导入 PDF
           </button>
         ) : null}
         {total ? (
@@ -456,7 +438,6 @@ export function Library() {
 
       {importOpen ? (
         <LiteratureImport
-          initialMode={importMode}
           onClose={() => setImportOpen(false)}
           onImported={(projectId, paper) => {
             setImportOpen(false);

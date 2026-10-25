@@ -1,10 +1,9 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { cx } from '../lib/utils';
-import { BookIcon, CalendarIcon, LayersIcon, SettingsIcon, SunIcon } from './Icons';
+import { BookIcon, LayersIcon, SettingsIcon, SunIcon } from './Icons';
 
 const NAV = [
   { to: '/', label: '今日', icon: SunIcon, end: true },
-  { to: '/tasks', label: '计划', icon: CalendarIcon, end: false },
   { to: '/projects', label: '项目', icon: LayersIcon, end: false },
   { to: '/library', label: '文献', icon: BookIcon, end: false },
   { to: '/settings', label: '设置', icon: SettingsIcon, end: false },
@@ -12,7 +11,7 @@ const NAV = [
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
       <div className="mx-auto w-full max-w-2xl px-5 pb-32 pt-6 sm:px-8 sm:pt-10">
         <header className="flex items-center justify-between">
           <Link to="/" className="group flex items-center gap-2.5">
@@ -38,7 +37,7 @@ export function Layout() {
         aria-label="主导航"
         className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-3xl border border-line bg-surface/85 px-2 py-2 shadow-lift backdrop-blur-md"
       >
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-4">
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
