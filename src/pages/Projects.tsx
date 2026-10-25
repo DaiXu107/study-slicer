@@ -11,6 +11,8 @@ import {
 import { ProgressBar } from '../components/ProgressBar';
 import { StageBadge } from '../components/StageBadge';
 import { formatCreatedAt } from '../lib/date';
+import { nextStageOf, stageIndex } from '../lib/tasks';
+import { STAGES } from '../types';
 import { useApp } from '../store/AppContext';
 
 export function Projects() {
@@ -37,7 +39,9 @@ export function Projects() {
           <h1 className="mt-2.5 text-[30px] font-semibold leading-tight tracking-tight">
             你的课题
           </h1>
-          <p className="mt-1.5 text-[13.5px] text-ink-soft">每个大问题，都能切成今天的一小片。</p>
+          <p className="mt-1.5 text-[13.5px] text-ink-soft">
+            多个课题可以同时推进；每个课题的阶段任务都算在同一个进度里。
+          </p>
         </div>
         <Link to="/wizard" className="btn btn-primary btn-sm mt-1 shrink-0">
           <PlusIcon className="h-4 w-4" />
@@ -52,6 +56,8 @@ export function Projects() {
             const done = project.dailyTasks.filter((t) => t.done).length;
             const pct = total ? Math.round((done / total) * 100) : 0;
             const selectedDirections = project.directions.filter((d) => d.selected).length;
+            const currentStage = stageIndex(project.stage);
+            const next = nextStageOf(project.stage);
 
             return (
               <article
@@ -59,7 +65,7 @@ export function Projects() {
                 className="group relative rounded-3xl border border-line bg-surface shadow-card transition-shadow hover:shadow-lift"
               >
                 <Link
-                  to="/"
+                  to={`/tasks?project=${project.id}`}
                   onClick={() => setActiveProject(project.id)}
                   className="block rounded-3xl p-5 pr-14"
                 >
@@ -101,10 +107,30 @@ export function Projects() {
                         : `${project.papers.length} 篇文献`}
                     </span>
                     <span className="inline-flex items-center gap-1 text-[12px] font-medium text-ink-soft">
-                      继续
+                      全部任务
                       <ChevronRightIcon className="h-3.5 w-3.5" />
                     </span>
                   </div>
+
+                  <div className="mt-3 flex items-center gap-1.5" aria-hidden>
+                    {STAGES.map((stage, index) => (
+                      <span
+                        key={stage}
+                        title={stage}
+                        className={
+                          index < currentStage
+                            ? 'h-1.5 flex-1 rounded-full bg-moss'
+                            : index === currentStage
+                              ? 'h-1.5 flex-1 rounded-full bg-ink'
+                              : 'h-1.5 flex-1 rounded-full bg-line'
+                        }
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[10.5px] text-ink-faint">
+                    阶段 {currentStage + 1} / {STAGES.length}
+                    {next ? ` · 下一阶段「${next}」` : ' · 已在最后阶段'}
+                  </p>
                 </Link>
 
                 <button

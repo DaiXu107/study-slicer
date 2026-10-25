@@ -93,6 +93,27 @@ export function ChevronRightIcon({ className }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="m15 5-7 7 7 7" />
+    </svg>
+  );
+}
+
+export function GripIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <circle cx="9" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="18" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="18" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function TrashIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>

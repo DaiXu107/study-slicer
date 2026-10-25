@@ -1,5 +1,6 @@
 import type { DailyTask } from '../types';
-import { formatTimeCN, friendlyDate } from '../lib/date';
+import { formatDateCN, formatTimeCN, friendlyDate, todayStr } from '../lib/date';
+import { isRolledOverToday } from '../lib/tasks';
 import { cx } from '../lib/utils';
 import { CheckIcon, ClockIcon, NoteIcon } from './Icons';
 
@@ -8,9 +9,13 @@ interface Props {
   onToggle: () => void;
   onPatch: (patch: Partial<DailyTask>) => void;
   showDate?: boolean;
+  /** 多课题混合显示时，标出任务属于哪个课题 */
+  projectTitle?: string;
 }
 
-export function TaskCard({ task, onToggle, onPatch, showDate }: Props) {
+export function TaskCard({ task, onToggle, onPatch, showDate, projectTitle }: Props) {
+  const rolled = isRolledOverToday(task);
+
   return (
     <article
       className={cx(
@@ -41,6 +46,19 @@ export function TaskCard({ task, onToggle, onPatch, showDate }: Props) {
           {showDate ? (
             <p className="mb-1 text-[11px] font-medium tracking-wide text-accent-deep">
               {friendlyDate(task.date)}
+            </p>
+          ) : null}
+
+          {projectTitle ? (
+            <span className="mb-1.5 inline-flex max-w-full truncate rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-deep">
+              {projectTitle}
+            </span>
+          ) : null}
+
+          {rolled && task.plannedDate ? (
+            <p className="mb-1 text-[10.5px] text-accent-deep">
+              顺延自 {formatDateCN(task.plannedDate)}
+              {task.rollovers && task.rollovers > 1 ? ` · 第 ${task.rollovers} 次` : ''}
             </p>
           ) : null}
 
